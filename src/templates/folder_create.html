@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Nova Pasta — Galeria{% endblock %}
+{% block heading %}Nova Pasta{% endblock %}
+
+{% block content %}
+<div class="folder-create-container">
+  {% if error %}
+  <p class="form-error" role="alert">{{ error }}</p>
+  {% endif %}
+
+  <form class="auth-form" method="post" action="/folders/new">
+    <label>
+      Título
+      <input
+        type="text"
+        name="title"
+        value="{{ title_value | default('') }}"
+        required
+        minlength="1"
+        maxlength="100"
+        placeholder="Ex: Viagem à Serra"
+      />
+    </label>
+
+    <label>
+      Descrição (opcional)
+      <textarea
+        name="description"
+        rows="3"
+        maxlength="1000"
+        placeholder="Breve descrição sobre a pasta..."
+      >{{ description_value | default('') }}</textarea>
+    </label>
+
+    <div class="form-checkbox-group">
+      <label class="checkbox-label">
+        <input
+          type="checkbox"
+          name="is_public"
+          value="true"
+          {% if is_public is not defined or is_public %}checked{% endif %}
+        />
+        Pasta pública (visível para a comunidade)
+      </label>
+
+      <label class="checkbox-label">
+        <input
+          type="checkbox"
+          name="is_adult"
+          value="true"
+          {% if is_adult %}checked{% endif %}
+        />
+        Conteúdo adulto (+18)
+      </label>
+    </div>
+
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Criar Pasta</button>
+      <a href="/" class="btn btn-secondary">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
