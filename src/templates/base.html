@@ -27,6 +27,13 @@
       {% endblock %}
     </header>
     <main class="site-main">
+      {% if flashes %}
+      <ul class="flash-list">
+        {% for item in flashes %}
+        <li class="flash flash-{{ item.category }}" role="status">{{ item.message }}</li>
+        {% endfor %}
+      </ul>
+      {% endif %}
       {% block content %}{% endblock %}
     </main>
     <script src="{{ url_for('static', path='js/app.js') }}"></script>

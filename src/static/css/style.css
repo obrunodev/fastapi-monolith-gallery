@@ -73,6 +73,30 @@ form button {
   color: #b42318;
 }
 
+.flash-list {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.flash {
+  margin: 0;
+  padding: 0.65rem 0.75rem;
+  border-radius: 0.35rem;
+}
+
+.flash-success {
+  background: #e7f6ed;
+  color: #067647;
+}
+
+.flash-error {
+  background: #fdecea;
+  color: #b42318;
+}
+
 .auth-alt {
   margin-top: 1rem;
 }

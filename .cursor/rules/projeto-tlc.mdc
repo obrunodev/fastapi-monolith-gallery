@@ -20,6 +20,7 @@ Monolito **FastAPI + Jinja2** (SSR, sem SPA). Repositório: galeria pública/pri
 - Modelo `User` (username/email únicos, role `user`/`moderator`/`admin`) + seed de admin (`make db-seed`)
 - Auth com sessão (cookie): `/register`, `/login`, `POST /logout`
 - `get_current_user` em todas as rotas (anônimo se não houver sessão válida)
+- Layout: nav de conta e mensagens flash no `base.html`
 - Templates: `src/templates/base.html` + `dashboard.html`
 - Testes: `tests/test_health.py`, `tests/test_db.py`, `tests/test_users.py`, `tests/test_auth.py`
 

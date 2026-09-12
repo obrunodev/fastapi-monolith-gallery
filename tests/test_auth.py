@@ -126,3 +126,30 @@ def test_missing_user_is_treated_as_anonymous(
     assert response.status_code == 200
     assert "Entrar" in response.text
     assert ">Sair<" not in response.text
+
+
+def test_register_flashes_once_on_home(client: TestClient) -> None:
+    response = client.post("/register", data=REGISTER_DATA)
+    assert response.status_code == 200
+    assert "Conta criada." in response.text
+    again = client.get("/")
+    assert "Conta criada." not in again.text
+
+
+def test_login_flashes_on_home(client: TestClient) -> None:
+    client.post("/register", data=REGISTER_DATA)
+    client.post("/logout")
+    response = client.post(
+        "/login",
+        data={"identifier": "alice", "password": "secret123"},
+    )
+    assert response.status_code == 200
+    assert "Você entrou." in response.text
+
+
+def test_logout_flashes_on_home(client: TestClient) -> None:
+    client.post("/register", data=REGISTER_DATA)
+    response = client.post("/logout")
+    assert response.status_code == 200
+    assert "Você saiu." in response.text
+    assert "Entrar" in response.text

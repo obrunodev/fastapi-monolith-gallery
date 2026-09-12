@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from src.db import get_db
 from src.deps import get_current_user
+from src.flash import flash
 from src.models import User
 from src.schemas.auth import UserLogin, UserRegister
 from src.services.auth import (
@@ -52,6 +53,7 @@ def register(
     current_user: User | None = Depends(get_current_user),
 ) -> HTMLResponse:
     if current_user is not None:
+        flash(request, "Você já está autenticado.")
         return RedirectResponse("/", status_code=303)
     context = {
         "title": "Criar conta",
@@ -88,6 +90,7 @@ def register(
         )
 
     request.session[SESSION_USER_ID] = user.id
+    flash(request, "Conta criada.")
     return RedirectResponse("/", status_code=303)
 
 
@@ -113,6 +116,7 @@ def login(
     current_user: User | None = Depends(get_current_user),
 ) -> HTMLResponse:
     if current_user is not None:
+        flash(request, "Você já está autenticado.")
         return RedirectResponse("/", status_code=303)
     context = {
         "title": "Entrar",
@@ -144,10 +148,12 @@ def login(
         )
 
     request.session[SESSION_USER_ID] = user.id
+    flash(request, "Você entrou.")
     return RedirectResponse("/", status_code=303)
 
 
 @router.post("/logout")
 def logout(request: Request) -> RedirectResponse:
     request.session.clear()
+    flash(request, "Você saiu.")
     return RedirectResponse("/", status_code=303)
