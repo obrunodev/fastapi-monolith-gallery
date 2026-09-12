@@ -100,3 +100,92 @@ form button {
 .auth-alt {
   margin-top: 1rem;
 }
+
+.btn {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  border-radius: 0.35rem;
+  font-weight: 500;
+  text-decoration: none;
+  border: 1px solid transparent;
+  cursor: pointer;
+  font: inherit;
+  line-height: 1.25;
+}
+
+.btn-primary {
+  background: #0f172a;
+  color: #ffffff;
+}
+
+.btn-primary:hover {
+  background: #1e293b;
+}
+
+.btn-secondary {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+.btn-secondary:hover {
+  background: #cbd5e1;
+}
+
+.feed-welcome {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.feed-welcome h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.25rem;
+}
+
+.feed-welcome p {
+  margin: 0 0 1rem;
+  color: #475569;
+}
+
+.feed-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.feed-section {
+  margin-top: 1rem;
+}
+
+.feed-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.feed-header h3 {
+  margin: 0;
+  font-size: 1.15rem;
+  color: #334155;
+}
+
+.feed-empty {
+  background: #ffffff;
+  border: 1px dashed #cbd5e1;
+  border-radius: 0.5rem;
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  color: #64748b;
+}
+
+.feed-empty p {
+  margin: 0.25rem 0;
+}
+
+.feed-empty-hint {
+  font-size: 0.9rem;
+  color: #94a3b8;
+}
+
