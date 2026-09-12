@@ -2,7 +2,7 @@ import re
 import unicodedata
 
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from src.models import Folder
 from src.schemas.folder import FolderCreate
@@ -55,3 +55,15 @@ def get_folder_by_slug(db: Session, slug: str) -> Folder | None:
 def get_folder_by_id(db: Session, folder_id: int) -> Folder | None:
     """Busca uma pasta pelo seu ID."""
     return db.scalar(select(Folder).where(Folder.id == folder_id))
+
+
+def list_user_folders(db: Session, owner_id: int) -> list[Folder]:
+    """Lista todas as pastas pertencentes a um usuário, ordenadas pelas mais recentes."""
+    stmt = (
+        select(Folder)
+        .where(Folder.owner_id == owner_id)
+        .options(selectinload(Folder.photos))
+        .order_by(Folder.created_at.desc(), Folder.id.desc())
+    )
+    return list(db.scalars(stmt).all())
+

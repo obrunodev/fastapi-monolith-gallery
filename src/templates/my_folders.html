@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Minhas Pastas — Galeria{% endblock %}
+{% block heading %}Minhas Pastas{% endblock %}
+
+{% block content %}
+<div class="folders-page">
+  <div class="folders-page-header">
+    <p class="folders-subtitle">Gerencie suas coleções de fotos públicas e privadas.</p>
+    <a href="/folders/new" class="btn btn-primary">+ Nova Pasta</a>
+  </div>
+
+  {% if folders %}
+  <div class="folders-grid">
+    {% for folder in folders %}
+    <article class="folder-card">
+      <div class="folder-card-main">
+        <div class="folder-card-header">
+          <h2 class="folder-card-title">
+            <a href="/folders/{{ folder.slug }}">{{ folder.title }}</a>
+          </h2>
+          <div class="folder-badges">
+            {% if folder.is_public %}
+            <span class="badge badge-public">Pública</span>
+            {% else %}
+            <span class="badge badge-private">Privada</span>
+            {% endif %}
+
+            {% if folder.is_adult %}
+            <span class="badge badge-adult">+18</span>
+            {% endif %}
+          </div>
+        </div>
+
+        {% if folder.description %}
+        <p class="folder-card-desc">{{ folder.description }}</p>
+        {% endif %}
+      </div>
+
+      <div class="folder-card-footer">
+        <span class="folder-meta-photos">
+          {{ folder.photos | length }} {% if folder.photos | length == 1 %}foto{% else %}fotos{% endif %}
+        </span>
+        <span class="folder-meta-date">
+          {{ folder.created_at.strftime("%d/%m/%Y") if folder.created_at else "" }}
+        </span>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="folders-empty">
+    <p>Você ainda não criou nenhuma pasta.</p>
+    <p class="folders-empty-hint">Crie uma pasta para começar a organizar e compartilhar suas fotos.</p>
+    <div class="folders-empty-action">
+      <a href="/folders/new" class="btn btn-primary">Criar primeira pasta</a>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

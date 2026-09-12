@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, Form, HTTPException, Request, status
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
@@ -12,6 +12,50 @@ from src.services import folders as folders_service
 from src.templating import templates
 
 router = APIRouter(tags=["folders"])
+
+
+def _wants_json(request: Request) -> bool:
+    """Retorna True só quando o cliente pede JSON como media type primário."""
+    accept = request.headers.get("accept", "")
+    if not accept:
+        return False
+    primary = accept.split(",")[0].split(";")[0].strip().lower()
+    return primary == "application/json" or primary.endswith("+json")
+
+
+@router.get("/me/folders", response_model=None)
+def list_my_folders(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_current_user),
+) -> HTMLResponse | RedirectResponse | JSONResponse:
+    """Lista as pastas do usuário autenticado (HTML ou JSON)."""
+    is_json = _wants_json(request)
+
+    if current_user is None:
+        if is_json:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Autenticação necessária para listar suas pastas.",
+            )
+        flash(request, "Faça login para ver suas pastas.")
+        return RedirectResponse("/login", status_code=status.HTTP_303_SEE_OTHER)
+
+    folders = folders_service.list_user_folders(db, owner_id=current_user.id)
+
+    if is_json:
+        return JSONResponse(
+            content=[FolderRead.model_validate(f).model_dump(mode="json") for f in folders]
+        )
+
+    return templates.TemplateResponse(
+        request,
+        "my_folders.html",
+        {
+            "title": "Minhas Pastas",
+            "folders": folders,
+        },
+    )
 
 
 @router.post("/folders", response_model=FolderRead, status_code=status.HTTP_201_CREATED)
@@ -108,4 +152,4 @@ def submit_folder_create_form(
         )
 
     flash(request, f"Pasta '{folder.title}' criada com sucesso!")
-    return RedirectResponse("/", status_code=status.HTTP_303_SEE_OTHER)
+    return RedirectResponse("/me/folders", status_code=status.HTTP_303_SEE_OTHER)

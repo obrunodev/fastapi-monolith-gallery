@@ -223,3 +223,143 @@ form button {
   margin-top: 0.5rem;
 }
 
+.folders-page {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.folders-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.folders-subtitle {
+  margin: 0;
+  color: #475569;
+  font-size: 0.95rem;
+}
+
+.folders-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.folder-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 1rem;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.folder-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+}
+
+.folder-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.folder-card-title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.folder-card-title a {
+  color: #0f172a;
+  text-decoration: none;
+}
+
+.folder-card-title a:hover {
+  text-decoration: underline;
+}
+
+.folder-badges {
+  display: flex;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.15rem 0.45rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.2;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.badge-public {
+  background: #e7f6ed;
+  color: #067647;
+}
+
+.badge-private {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.badge-adult {
+  background: #fef3f2;
+  color: #b42318;
+  border: 1px solid #fecdca;
+}
+
+.folder-card-desc {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #64748b;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.folder-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.82rem;
+  color: #94a3b8;
+  border-top: 1px solid #f1f5f9;
+  padding-top: 0.75rem;
+}
+
+.folders-empty {
+  background: #ffffff;
+  border: 1px dashed #cbd5e1;
+  border-radius: 0.5rem;
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  color: #64748b;
+}
+
+.folders-empty p {
+  margin: 0.25rem 0;
+}
+
+.folders-empty-hint {
+  font-size: 0.9rem;
+  color: #94a3b8;
+}
+
+.folders-empty-action {
+  margin-top: 1rem;
+}
+
+

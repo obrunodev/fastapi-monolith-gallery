@@ -200,22 +200,160 @@ def test_web_submit_folder_form_success(client: TestClient) -> None:
         follow_redirects=False,
     )
     assert response.status_code == 303
-    assert response.headers["location"] == "/"
+    assert response.headers["location"] == "/me/folders"
 
     # Ao seguir o redirecionamento, a mensagem flash de sucesso deve estar visível
-    feed_res = client.get("/")
+    feed_res = client.get("/me/folders")
     assert "Pasta &#39;Minha Primeira Pasta&#39; criada com sucesso!" in feed_res.text or "Pasta 'Minha Primeira Pasta' criada com sucesso!" in feed_res.text
 
 
 def test_nav_shows_new_folder_link_when_logged_in(client: TestClient) -> None:
-    # Não logado: não deve conter o link "Nova pasta"
+    # Não logado: não deve conter os links de pastas
     r_anon = client.get("/")
     assert "/folders/new" not in r_anon.text
+    assert "/me/folders" not in r_anon.text
 
-    # Logado: deve conter o link "Nova pasta"
+    # Logado: deve conter os links "Nova pasta" e "Minhas pastas"
     client.post(
         "/register",
         data={"username": "helen", "email": "helen@example.com", "password": "password123"},
     )
     r_user = client.get("/")
     assert "/folders/new" in r_user.text
+    assert "/me/folders" in r_user.text
+
+
+# --- Testes de Listagem de Pastas do Usuário: /me/folders ---
+
+
+def test_list_user_folders_service(db_session: Session, test_user: User) -> None:
+    # Usuário sem pastas
+    folders = folders_service.list_user_folders(db_session, test_user.id)
+    assert folders == []
+
+    # Cria pasta 1
+    f1 = folders_service.create_folder(
+        db_session,
+        owner_id=test_user.id,
+        data=FolderCreate(title="Primeira Pasta", description="Desc 1", is_public=True),
+    )
+    db_session.commit()
+
+    # Cria outro usuário com sua própria pasta
+    other_user = register_user(
+        db_session,
+        username="other_user",
+        email="other@example.com",
+        password="password123",
+    )
+    db_session.commit()
+    folders_service.create_folder(
+        db_session,
+        owner_id=other_user.id,
+        data=FolderCreate(title="Pasta de Outro", is_public=True),
+    )
+    db_session.commit()
+
+    # Cria pasta 2 do test_user
+    f2 = folders_service.create_folder(
+        db_session,
+        owner_id=test_user.id,
+        data=FolderCreate(title="Segunda Pasta", description="Desc 2", is_public=False, is_adult=True),
+    )
+    db_session.commit()
+
+    # Deve retornar apenas as 2 pastas do test_user, com a mais recente primeiro
+    user_folders = folders_service.list_user_folders(db_session, test_user.id)
+    assert len(user_folders) == 2
+    assert [f.id for f in user_folders] == [f2.id, f1.id]
+    assert user_folders[0].title == "Segunda Pasta"
+    assert user_folders[0].is_adult is True
+    assert user_folders[0].is_public is False
+    assert user_folders[1].title == "Primeira Pasta"
+
+
+def test_list_folders_anonymous_redirects_to_login(client: TestClient) -> None:
+    response = client.get("/me/folders", follow_redirects=False)
+    assert response.status_code == 303
+    assert response.headers["location"] == "/login"
+
+    # Segue redirecionamento e verifica mensagem flash
+    login_page = client.get("/login")
+    assert "Faça login para ver suas pastas." in login_page.text
+
+
+def test_list_folders_anonymous_api_returns_401(client: TestClient) -> None:
+    response = client.get("/me/folders", headers={"Accept": "application/json"})
+    assert response.status_code == 401
+    assert "Autenticação necessária" in response.json()["detail"]
+
+
+def test_list_folders_prefers_html_when_accept_lists_json_second(client: TestClient) -> None:
+    client.post(
+        "/register",
+        data={"username": "laura", "email": "laura@example.com", "password": "password123"},
+    )
+    response = client.get(
+        "/me/folders",
+        headers={"Accept": "text/html, application/json;q=0.9"},
+    )
+    assert response.status_code == 200
+    assert "Minhas Pastas" in response.text
+
+
+def test_list_folders_logged_in_empty_state(client: TestClient) -> None:
+    client.post(
+        "/register",
+        data={"username": "isabela", "email": "isabela@example.com", "password": "password123"},
+    )
+
+    # SSR
+    response = client.get("/me/folders")
+    assert response.status_code == 200
+    assert "Minhas Pastas" in response.text
+    assert "Você ainda não criou nenhuma pasta." in response.text
+    assert "Criar primeira pasta" in response.text
+
+    # JSON API
+    api_response = client.get("/me/folders", headers={"Accept": "application/json"})
+    assert api_response.status_code == 200
+    assert api_response.json() == []
+
+
+def test_list_folders_logged_in_with_folders(client: TestClient) -> None:
+    # Usuário 1 cria duas pastas
+    client.post(
+        "/register",
+        data={"username": "julio", "email": "julio@example.com", "password": "password123"},
+    )
+    client.post(
+        "/folders",
+        json={"title": "Viagem Chile", "description": "Fotos do Atacama", "is_public": True, "is_adult": False},
+    )
+    client.post(
+        "/folders",
+        json={"title": "Projetos Secretos", "description": "Confidencial", "is_public": False, "is_adult": True},
+    )
+
+    # SSR: deve exibir as pastas, badges e descrições
+    ssr_response = client.get("/me/folders")
+    assert ssr_response.status_code == 200
+    assert "Viagem Chile" in ssr_response.text
+    assert "Fotos do Atacama" in ssr_response.text
+    assert "Projetos Secretos" in ssr_response.text
+    assert "Pública" in ssr_response.text
+    assert "Privada" in ssr_response.text
+    assert "+18" in ssr_response.text
+
+    # JSON API: deve retornar as 2 pastas ordenadas
+    api_response = client.get("/me/folders", headers={"Accept": "application/json"})
+    assert api_response.status_code == 200
+    data = api_response.json()
+    assert len(data) == 2
+    assert data[0]["title"] == "Projetos Secretos"
+    assert data[0]["is_public"] is False
+    assert data[0]["is_adult"] is True
+    assert data[1]["title"] == "Viagem Chile"
+    assert data[1]["is_public"] is True
+    assert data[1]["is_adult"] is False
+
