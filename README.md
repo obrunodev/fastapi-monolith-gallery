@@ -40,6 +40,7 @@ Aplicação em http://127.0.0.1:8000
 | `ADMIN_EMAIL` | `admin@localhost` | E-mail do admin criado pelo seed |
 | `ADMIN_PASSWORD` | `admin` | Senha do admin criado pelo seed |
 | `SESSION_SECRET` | `dev-insecure-change-me` | Assina o cookie de sessão |
+| `UPLOAD_DIR` | `<raiz>/uploads` | Diretório local de armazenamento de fotos |
 
 ## Documentação para o time e agentes de IA
 

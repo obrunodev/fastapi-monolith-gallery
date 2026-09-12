@@ -219,3 +219,6 @@ __marimo__/
 
 # Local SQLite database
 /data/
+
+# Uploaded files (local storage)
+/uploads/

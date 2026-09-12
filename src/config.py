@@ -25,3 +25,14 @@ def get_admin_password() -> str:
 def get_session_secret() -> str:
     return os.getenv("SESSION_SECRET", "dev-insecure-change-me")
 
+
+UPLOAD_DIR = ROOT_DIR / "uploads"
+
+
+def get_upload_dir() -> Path:
+    env_dir = os.getenv("UPLOAD_DIR")
+    if env_dir:
+        return Path(env_dir).resolve()
+    return UPLOAD_DIR
+
+

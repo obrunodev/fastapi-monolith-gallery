@@ -4,7 +4,7 @@ from fastapi import Depends, FastAPI
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 
-from src.config import get_session_secret
+from src.config import get_session_secret, get_upload_dir
 from src.deps import get_current_user
 from src.routes.auth import router as auth_router
 from src.routes.health import router as health_router
@@ -22,6 +22,9 @@ def create_app() -> FastAPI:
         https_only=False,
     )
     app.mount("/static", StaticFiles(directory=SRC_DIR / "static"), name="static")
+    upload_dir = get_upload_dir()
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    app.mount("/uploads", StaticFiles(directory=upload_dir), name="uploads")
     app.include_router(health_router)
     app.include_router(auth_router)
     app.include_router(pages_router)
