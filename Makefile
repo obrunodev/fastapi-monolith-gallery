@@ -1,4 +1,4 @@
-.PHONY: install run test
+.PHONY: install run test db-migrate db-upgrade
 
 install:
 	uv sync --group dev
@@ -8,3 +8,9 @@ run:
 
 test:
 	uv run pytest
+
+db-migrate:
+	uv run alembic revision --autogenerate -m "$(msg)"
+
+db-upgrade:
+	uv run alembic upgrade head
