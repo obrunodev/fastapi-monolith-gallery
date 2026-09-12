@@ -1,0 +1,23 @@
+:root {
+  color-scheme: light;
+  font-family: system-ui, sans-serif;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: #f6f7f9;
+  color: #1f2933;
+}
+
+.site-header,
+.site-main {
+  max-width: 48rem;
+  margin: 0 auto;
+  padding: 1.5rem 1rem;
+}
+
+.site-header h1 {
+  margin: 0;
+  font-size: 1.75rem;
+}
