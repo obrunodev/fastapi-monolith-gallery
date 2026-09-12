@@ -9,8 +9,8 @@ Monolito FastAPI + Jinja2, alinhado à estrutura atual (`routes` → `schemas` �
 | Campo | Valor |
 |-------|-------|
 | **Fase atual** | F1 — Pastas + fotos |
-| **Última tarefa concluída** | 1.3 |
-| **Próxima tarefa** | **1.4** — Upload com validação (tipo, tamanho, extensão) |
+| **Última tarefa concluída** | 1.5 |
+| **Próxima tarefa** | **1.6** — Listar pastas do usuário logado (`/me/folders`) |
 | **MVP completo?** | Não |
 
 > Ao concluir uma tarefa: marque `[x]` na tabela da fase e atualize esta seção.
@@ -78,8 +78,8 @@ F8  Gamificação       → níveis, pontos, perfil com level (pós-MVP)
 | 1.1 | [x] | Modelo `Folder`: title, slug, description, owner_id, is_public, is_adult (default false), created_at | Migration |
 | 1.2 | [x] | Modelo `Photo`: folder_id, filename, original_name, order, created_at | Migration |
 | 1.3 | [x] | Storage local em `uploads/` (configurável por env) | `services/storage.py` |
-| 1.4 | [ ] | Upload com validação (tipo, tamanho, extensão) | Service + testes |
-| 1.5 | [ ] | Criar pasta (título, descrição, pública/privada) | `POST /folders` |
+| 1.4 | [x] | Upload com validação (tipo, tamanho, extensão) | Service + testes |
+| 1.5 | [x] | Criar pasta (título, descrição, pública/privada) | `POST /folders` |
 | 1.6 | [ ] | Listar pastas do usuário logado | `/me/folders` |
 | 1.7 | [ ] | Adicionar/remover/reordenar fotos na pasta | Rotas de gestão |
 | 1.8 | [ ] | Página pública da pasta por slug | `GET /folders/{slug}` |

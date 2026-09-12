@@ -16,29 +16,49 @@ Monolito **FastAPI + Jinja2** (SSR, sem SPA). Repositório: galeria pública/pri
 
 - `GET /health` — health check JSON
 - `GET /` — feed comunitário HTML (empty state + CTA para visitante)
+- `POST /folders` — criar pasta (JSON, autenticado, `FolderRead`)
+- `GET /folders/new` + `POST /folders/new` — formulário SSR de nova pasta
 - Persistência SQLite: `src/config.py`, `src/db.py`, `src/models.py`, Alembic em `alembic/`
-- Modelo `User` (username/email únicos, role `user`/`moderator`/`admin`) + seed de admin (`make db-seed`)
-- Modelo `Folder` (title, slug, description, owner_id, is_public, is_adult, created_at) + migration
-- Modelo `Photo` (folder_id, filename, original_name, order, created_at) + migration
+- Modelos: `User`, `Folder`, `Photo` + migrations
 - Auth com sessão (cookie): `/register`, `/login`, `POST /logout`
-- `get_current_user` em todas as rotas (anônimo se não houver sessão válida)
-- Layout: nav de conta e mensagens flash no `base.html`
-- Templates: `src/templates/base.html` + `feed.html`
-- Storage local em `src/services/storage.py` (com rota `/uploads` montada)
-- Testes: `tests/test_health.py`, `tests/test_db.py`, `tests/test_users.py`, `tests/test_auth.py`, `tests/test_pages.py`, `tests/test_folder_model.py`, `tests/test_photo_model.py`, `tests/test_storage.py`
+- `get_current_user` global em `create_app()`; rotas autenticadas usam `Depends(get_current_user)` quando precisam do valor
+- Storage: `src/services/storage.py` — `validate_image`, `save_image`, `/uploads` montado em `main.py`
+- Services: `auth`, `folders` (slugify, `create_folder`), `storage`, `seed`, `passwords`, `health`
+- Schemas: `auth`, `folder`, `photo`, `health`
+- Templates: `base.html`, `feed.html`, `folder_create.html`, `login.html`, `register.html`
+- Testes: `test_health`, `test_db`, `test_users`, `test_auth`, `test_pages`, `test_folder_model`, `test_photo_model`, `test_storage`, `test_folders`
 
 ## Próxima tarefa
 
 Consulte `ROADMAP.md` → seção **Progresso atual**. Implemente **uma tarefa por vez**, na ordem do roadmap.
 
-**Atual:** **1.4** — Upload com validação (tipo, tamanho, extensão)
+**Atual:** **1.6** — Listar pastas do usuário logado (`/me/folders`)
 
 ## Ao concluir uma tarefa do ROADMAP
 
 1. Marque a tarefa como `[x]` na tabela correspondente em `ROADMAP.md`.
 2. Atualize **Progresso atual** (fase, última concluída, próxima).
-3. Rode `make test` e confirme que passou.
-4. Se criou migration: `make db-upgrade`.
+3. Atualize **esta rule** (seção "O que já existe" + "Próxima tarefa").
+4. Rode `make test` e confirme que passou.
+5. Se criou migration: `make db-upgrade`.
+6. Commits separados por tarefa do roadmap quando possível.
+
+## Convenções que o agente deve seguir
+
+Leia `AGENTS.md` completo. Resumo obrigatório:
+
+| Tema | Regra |
+|------|-------|
+| Camadas | `routes` finas → `schemas` → `services` → DB/storage. Rotas não fazem SQL nem I/O de arquivo. |
+| SQLAlchemy | `select()` + `session.scalar()` — **nunca** `session.query()` |
+| Type hints | Rotas com HTML + redirect: `HTMLResponse \| RedirectResponse` + `response_model=None` |
+| Auth JSON | `HTTPException(401)` se `current_user is None` |
+| Auth SSR | flash + `RedirectResponse("/login")` |
+| Templates | Sempre `extends base.html`; CSS/JS em `static/` |
+| Upload | Validar em `storage.validate_image` / `save_image`; limites em `config.py` |
+| Testes | Modelo: `test_*_model.py`; rotas/fluxo: `test_*.py`; sem código morto |
+| Env vars novas | Adicionar em `config.py`, tabela do `README.md` e desta rule se relevante |
+| Git | Não commitar `/uploads/` nem `/data/`; uma tarefa do ROADMAP por PR/commit quando possível |
 
 ## Como rodar o projeto
 
@@ -62,6 +82,7 @@ Variáveis opcionais:
 | `ADMIN_PASSWORD` | `admin` | Senha do seed de admin |
 | `SESSION_SECRET` | `dev-insecure-change-me` | Chave assinatura do cookie de sessão |
 | `UPLOAD_DIR` | `<raiz>/uploads` | Diretório de armazenamento local de fotos |
+| `MAX_UPLOAD_SIZE` | `10485760` (10 MB) | Tamanho máximo de upload em bytes |
 
 Comandos extras:
 

@@ -100,6 +100,30 @@ def health() -> dict:
 - Não exponha stack traces, secrets nem SQL em respostas.
 - Configuração via variáveis de ambiente (quando surgir). Não commitar `.env` com segredos.
 - Datas e dinheiro: tipos explícitos (`datetime`, `Decimal`). Nunca misture `float` com valores monetários.
+- Rotas que retornam HTML **e** redirecionamento: anotar `HTMLResponse | RedirectResponse` e usar `response_model=None` no decorator (FastAPI não infere union de responses).
+- `get_current_user` já roda globalmente em `create_app()`. Nas rotas:
+  - use `Depends(get_current_user)` quando o handler precisa do valor (`if current_user is None`, API JSON com 401);
+  - não repasse `current_user` ao template se `_session_context` em `templating.py` já injeta o usuário.
+- Endpoints JSON autenticados: `401` via `HTTPException`. Formulários SSR: flash + `RedirectResponse` para `/login`.
+
+### SQLAlchemy (consultas)
+
+- Use **SQLAlchemy 2.0**: `select()` + `session.scalar()` / `session.scalars()`.
+- Não use `session.query()` (legado). Siga `src/services/auth.py` e `src/services/folders.py`.
+
+```python
+# Bom
+user = session.scalar(select(User).where(User.id == user_id))
+
+# Ruim
+user = session.query(User).filter(User.id == user_id).first()
+```
+
+### Upload e arquivos
+
+- Validação de imagem (magic bytes, extensão, MIME, tamanho) fica em `src/services/storage.py` (`validate_image`, `save_image`).
+- Leitura/escrita em disco e path traversal: mesmo módulo. Rotas não acessam filesystem diretamente.
+- Limites e paths vêm de `src/config.py` (`UPLOAD_DIR`, `MAX_UPLOAD_SIZE`). Documente novas env vars no `README.md`.
 
 ## Testes
 
@@ -109,6 +133,9 @@ def health() -> dict:
 - Fixtures comuns ficam em `tests/conftest.py`. Reutilize `client`.
 - Não dependa de rede, serviços reais ou ordem dos testes. Se um banco aparecer, use fixture isolada (container ou SQLite de teste) — nunca o banco de desenvolvimento compartilhado.
 - Nomeie arquivos `test_<area>.py` e funções `test_<comportamento>`.
+- Testes de **modelo** isolado: `test_<model>_model.py` (ex.: `test_folder_model.py`).
+- Testes de **rotas/fluxo** da área: `test_<area>.py` (ex.: `test_folders.py`).
+- Não deixe helpers/fixtures mortos no arquivo de teste.
 
 ```python
 def test_health_returns_ok(client: TestClient) -> None:
@@ -143,7 +170,9 @@ make test      # pytest
 
 ## Quando um agente (ou pessoa) termina uma tarefa
 
-1. Manter a estrutura de pastas.
-2. Rodar `make test`.
-3. Se mudou UI, verificar a página afetada e rotas que compartilham o mesmo template/estado.
-4. Descrever a mudança em linguagem de produto (“o /health passa a responder ok”), não só listar arquivos.
+1. Implementar **uma tarefa do ROADMAP por vez**; commits separados por tarefa quando possível.
+2. Atualizar `ROADMAP.md` (progresso + checkbox) e `.cursor/rules/projeto-tlc.mdc` (o que existe + próxima tarefa).
+3. Manter a estrutura de pastas.
+4. Rodar `make test` (e `make db-upgrade` se houver migration).
+5. Se mudou UI, verificar a página afetada e rotas que compartilham o mesmo template/estado.
+6. Descrever a mudança em linguagem de produto (“o /health passa a responder ok”), não só listar arquivos.

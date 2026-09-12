@@ -41,6 +41,7 @@ Aplicação em http://127.0.0.1:8000
 | `ADMIN_PASSWORD` | `admin` | Senha do admin criado pelo seed |
 | `SESSION_SECRET` | `dev-insecure-change-me` | Assina o cookie de sessão |
 | `UPLOAD_DIR` | `<raiz>/uploads` | Diretório local de armazenamento de fotos |
+| `MAX_UPLOAD_SIZE` | `10485760` (10 MB) | Tamanho máximo de upload de imagem em bytes |
 
 ## Documentação para o time e agentes de IA
 
