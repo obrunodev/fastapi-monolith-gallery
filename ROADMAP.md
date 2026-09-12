@@ -9,8 +9,8 @@ Monolito FastAPI + Jinja2, alinhado à estrutura atual (`routes` → `schemas` �
 | Campo | Valor |
 |-------|-------|
 | **Fase atual** | F1 — Pastas + fotos |
-| **Última tarefa concluída** | 1.6 |
-| **Próxima tarefa** | **1.7** — Adicionar/remover/reordenar fotos na pasta |
+| **Última tarefa concluída** | 1.7 |
+| **Próxima tarefa** | **1.8** — Página pública da pasta por slug |
 | **MVP completo?** | Não |
 
 > Ao concluir uma tarefa: marque `[x]` na tabela da fase e atualize esta seção.
@@ -81,7 +81,7 @@ F8  Gamificação       → níveis, pontos, perfil com level (pós-MVP)
 | 1.4 | [x] | Upload com validação (tipo, tamanho, extensão) | Service + testes |
 | 1.5 | [x] | Criar pasta (título, descrição, pública/privada) | `POST /folders` |
 | 1.6 | [x] | Listar pastas do usuário logado | `/me/folders` |
-| 1.7 | [ ] | Adicionar/remover/reordenar fotos na pasta | Rotas de gestão |
+| 1.7 | [x] | Adicionar/remover/reordenar fotos na pasta | Rotas de gestão |
 | 1.8 | [ ] | Página pública da pasta por slug | `GET /folders/{slug}` |
 | 1.9 | [ ] | Feed público na raiz `/`: listar pastas públicas recentes da comunidade | Home / feed comunitário |
 | 1.10 | [ ] | Testes: criar pasta, upload, listar, ver pasta pública | `tests/test_folders.py` |

@@ -38,12 +38,17 @@
       </div>
 
       <div class="folder-card-footer">
-        <span class="folder-meta-photos">
-          {{ folder.photos | length }} {% if folder.photos | length == 1 %}foto{% else %}fotos{% endif %}
-        </span>
-        <span class="folder-meta-date">
-          {{ folder.created_at.strftime("%d/%m/%Y") if folder.created_at else "" }}
-        </span>
+        <div class="folder-card-meta">
+          <span class="folder-meta-photos">
+            {{ folder.photos | length }} {% if folder.photos | length == 1 %}foto{% else %}fotos{% endif %}
+          </span>
+          <span class="folder-meta-date">
+            {{ folder.created_at.strftime("%d/%m/%Y") if folder.created_at else "" }}
+          </span>
+        </div>
+        <div class="folder-card-actions">
+          <a href="/folders/{{ folder.slug }}/edit" class="btn btn-sm btn-secondary">Gerenciar fotos</a>
+        </div>
       </div>
     </article>
     {% endfor %}

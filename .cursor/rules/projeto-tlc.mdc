@@ -21,21 +21,25 @@ Monolito **FastAPI + Jinja2** (SSR, sem SPA). Repositório: galeria pública/pri
 - `GET /me/folders` — listar pastas do usuário logado (SSR em `my_folders.html` e API JSON)
 - `POST /folders` — criar pasta (JSON, autenticado, `FolderRead`)
 - `GET /folders/new` + `POST /folders/new` — formulário SSR de nova pasta
+- `GET /folders/{slug}/edit` — gestão de fotos da pasta (SSR em `folder_edit.html`)
+- `POST /folders/{slug}/photos` — adicionar foto(s) à pasta (SSR e API JSON)
+- `DELETE /folders/{slug}/photos/{photo_id}` + `POST /folders/{slug}/photos/{photo_id}/delete` — remover foto (API e SSR form)
+- `PUT /folders/{slug}/photos/order` + `POST /folders/{slug}/photos/{photo_id}/move` — reordenar fotos (API e SSR form)
 - Persistência SQLite: `src/config.py`, `src/db.py`, `src/models.py`, Alembic em `alembic/`
 - Modelos: `User`, `Folder`, `Photo` + migrations
 - Auth com sessão (cookie): `/register`, `/login`, `POST /logout`
 - `get_current_user` global em `create_app()`; rotas autenticadas usam `Depends(get_current_user)` quando precisam do valor
 - Storage: `src/services/storage.py` — `validate_image`, `save_image`, `/uploads` montado em `main.py`
-- Services: `auth`, `folders` (slugify, `create_folder`, `list_user_folders`), `storage`, `seed`, `passwords`, `health`
+- Services: `auth`, `folders` (slugify, `create_folder`, `list_user_folders`, `add_photo_to_folder`, `remove_photo_from_folder`, `reorder_folder_photos`, `move_photo_order`), `storage`, `seed`, `passwords`, `health`
 - Schemas: `auth`, `folder`, `photo`, `health`
-- Templates: `base.html`, `feed.html`, `folder_create.html`, `login.html`, `register.html`, `my_folders.html`
+- Templates: `base.html`, `feed.html`, `folder_create.html`, `login.html`, `register.html`, `my_folders.html`, `folder_edit.html`
 - Testes: `test_health`, `test_db`, `test_users`, `test_auth`, `test_pages`, `test_folder_model`, `test_photo_model`, `test_storage`, `test_folders`
 
 ## Próxima tarefa
 
 Consulte `ROADMAP.md` → seção **Progresso atual**. Implemente **uma tarefa por vez**, na ordem do roadmap.
 
-**Atual:** **1.7** — Adicionar/remover/reordenar fotos na pasta
+**Atual:** **1.8** — Página pública da pasta por slug (`GET /folders/{slug}`)
 
 ## Ao concluir uma tarefa do ROADMAP
 

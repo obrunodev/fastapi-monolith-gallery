@@ -1,11 +1,18 @@
+import io
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from src.models import Folder, User
+from src.config import get_upload_dir
+from src.models import Folder, Photo, User
 from src.schemas.folder import FolderCreate
 from src.services import folders as folders_service
+from src.services import storage
 from src.services.auth import register_user
+
+JPEG_BYTES = b"\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x00\x00\x01\x00\x01\x00\x00fakejpegdata"
+PNG_BYTES = b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01fake"
 
 
 @pytest.fixture
@@ -356,4 +363,363 @@ def test_list_folders_logged_in_with_folders(client: TestClient) -> None:
     assert data[1]["title"] == "Viagem Chile"
     assert data[1]["is_public"] is True
     assert data[1]["is_adult"] is False
+
+
+# --- Testes da Tarefa 1.7: Gestão de Fotos (Adicionar, Remover, Reordenar) ---
+
+
+def test_add_photo_service(db_session: Session, test_user: User) -> None:
+    folder = folders_service.create_folder(
+        db_session,
+        owner_id=test_user.id,
+        data=FolderCreate(title="Praia 2026"),
+    )
+    db_session.commit()
+
+    # Adiciona 1ª foto
+    photo1 = folders_service.add_photo_to_folder(
+        db=db_session,
+        folder=folder,
+        content=JPEG_BYTES,
+        original_filename="mar.jpg",
+        content_type="image/jpeg",
+    )
+    db_session.commit()
+
+    assert photo1.id is not None
+    assert photo1.folder_id == folder.id
+    assert photo1.original_name == "mar.jpg"
+    assert photo1.order == 0
+    assert storage.file_exists(photo1.filename) is True
+
+    # Adiciona 2ª foto
+    photo2 = folders_service.add_photo_to_folder(
+        db=db_session,
+        folder=folder,
+        content=PNG_BYTES,
+        original_filename="areia.png",
+        content_type="image/png",
+    )
+    db_session.commit()
+
+    assert photo2.id is not None
+    assert photo2.folder_id == folder.id
+    assert photo2.original_name == "areia.png"
+    assert photo2.order == 1
+    assert storage.file_exists(photo2.filename) is True
+
+    # Limpa arquivos criados
+    storage.delete_file(photo1.filename)
+    storage.delete_file(photo2.filename)
+
+
+def test_remove_photo_service(db_session: Session, test_user: User) -> None:
+    folder = folders_service.create_folder(
+        db_session,
+        owner_id=test_user.id,
+        data=FolderCreate(title="Montanha"),
+    )
+    db_session.commit()
+
+    p1 = folders_service.add_photo_to_folder(db_session, folder, JPEG_BYTES, "p1.jpg")
+    p2 = folders_service.add_photo_to_folder(db_session, folder, PNG_BYTES, "p2.png")
+    db_session.commit()
+
+    p1_filename = p1.filename
+    p1_id = p1.id
+    p2_id = p2.id
+    assert storage.file_exists(p1_filename) is True
+
+    # Remove p1
+    filename = folders_service.remove_photo_from_folder(db_session, folder, p1_id)
+    db_session.commit()
+    assert filename == p1_filename
+    folders_service.purge_photo_file(filename)
+
+    assert storage.file_exists(p1_filename) is False
+    assert folders_service.get_photo_in_folder(db_session, folder.id, p1_id) is None
+
+    # p2 agora deve ter order reindexada para 0
+    remaining = folders_service.get_folder_photos(db_session, folder.id)
+    assert len(remaining) == 1
+    assert remaining[0].id == p2_id
+    assert remaining[0].order == 0
+
+    # Limpa p2
+    storage.delete_file(remaining[0].filename)
+
+
+def test_reorder_photos_service(db_session: Session, test_user: User) -> None:
+    folder = folders_service.create_folder(
+        db_session,
+        owner_id=test_user.id,
+        data=FolderCreate(title="Galeria Ordenada"),
+    )
+    db_session.commit()
+
+    p1 = folders_service.add_photo_to_folder(db_session, folder, JPEG_BYTES, "p1.jpg")
+    p2 = folders_service.add_photo_to_folder(db_session, folder, PNG_BYTES, "p2.png")
+    p3 = folders_service.add_photo_to_folder(db_session, folder, JPEG_BYTES, "p3.jpg")
+    db_session.commit()
+
+    # Reordena para [p3, p1, p2]
+    reordered = folders_service.reorder_folder_photos(db_session, folder, [p3.id, p1.id, p2.id])
+    db_session.commit()
+
+    assert [p.id for p in reordered] == [p3.id, p1.id, p2.id]
+    assert [p.order for p in reordered] == [0, 1, 2]
+
+    # Lista parcial de IDs
+    with pytest.raises(ValueError, match="Informe todos os IDs"):
+        folders_service.reorder_folder_photos(db_session, folder, [p3.id, p1.id])
+
+    # Tentativa de passar ID de foto que não existe ou de outra pasta
+    with pytest.raises(ValueError, match="não pertence a esta pasta"):
+        folders_service.reorder_folder_photos(db_session, folder, [p3.id, p1.id, 99999])
+
+    # Tentativa de passar IDs duplicados
+    with pytest.raises(ValueError, match="duplicados"):
+        folders_service.reorder_folder_photos(db_session, folder, [p3.id, p3.id, p2.id])
+
+    for p in reordered:
+        storage.delete_file(p.filename)
+
+
+def test_move_photo_order_service(db_session: Session, test_user: User) -> None:
+    folder = folders_service.create_folder(
+        db_session,
+        owner_id=test_user.id,
+        data=FolderCreate(title="Movendo Fotos"),
+    )
+    db_session.commit()
+
+    p1 = folders_service.add_photo_to_folder(db_session, folder, JPEG_BYTES, "p1.jpg")
+    p2 = folders_service.add_photo_to_folder(db_session, folder, PNG_BYTES, "p2.png")
+    db_session.commit()
+
+    # Move p2 para cima (up) -> deve trocar com p1
+    moved = folders_service.move_photo_order(db_session, folder, p2.id, "up")
+    db_session.commit()
+    assert moved is True
+
+    photos = folders_service.get_folder_photos(db_session, folder.id)
+    assert [p.id for p in photos] == [p2.id, p1.id]
+    assert [p.order for p in photos] == [0, 1]
+
+    # Tentativa de mover p2 para cima novamente (já é a primeira)
+    assert folders_service.move_photo_order(db_session, folder, p2.id, "up") is False
+
+    for p in photos:
+        storage.delete_file(p.filename)
+
+
+def test_api_add_photo_auth_and_permissions(client: TestClient) -> None:
+    # Anônimo tenta enviar foto
+    r_anon = client.post(
+        "/folders/qualquer-pasta/photos",
+        files={"file": ("foto.jpg", io.BytesIO(JPEG_BYTES), "image/jpeg")},
+        headers={"Accept": "application/json"},
+    )
+    assert r_anon.status_code == 401
+
+    # Cria usuário A e sua pasta
+    client.post("/register", data={"username": "user_a", "email": "a@example.com", "password": "password123"})
+    r_folder = client.post("/folders", json={"title": "Pasta A"})
+    slug_a = r_folder.json()["slug"]
+
+    # Desloga e cria usuário B
+    client.post("/logout")
+    client.post("/register", data={"username": "user_b", "email": "b@example.com", "password": "password123"})
+
+    # Usuário B tenta adicionar foto na pasta do Usuário A -> 403
+    r_forbidden = client.post(
+        f"/folders/{slug_a}/photos",
+        files={"file": ("foto.jpg", io.BytesIO(JPEG_BYTES), "image/jpeg")},
+        headers={"Accept": "application/json"},
+    )
+    assert r_forbidden.status_code == 403
+
+
+def test_api_add_photo_validation_error(client: TestClient) -> None:
+    client.post("/register", data={"username": "user_valid", "email": "val@example.com", "password": "password123"})
+    r_folder = client.post("/folders", json={"title": "Pasta Validação"})
+    slug = r_folder.json()["slug"]
+
+    # Envia arquivo de texto em vez de imagem
+    r_bad = client.post(
+        f"/folders/{slug}/photos",
+        files={"file": ("texto.txt", io.BytesIO(b"conteudo texto"), "text/plain")},
+        headers={"Accept": "application/json"},
+    )
+    assert r_bad.status_code == 400
+    assert "Extensão 'txt' não é permitida" in r_bad.json()["detail"] or "não é um formato de imagem suportado" in r_bad.json()["detail"] or "Extensão" in r_bad.json()["detail"]
+
+
+def test_api_multi_upload_partial_failure_cleans_orphan_files(client: TestClient) -> None:
+    client.post("/register", data={"username": "user_multi", "email": "multi@example.com", "password": "password123"})
+    r_folder = client.post("/folders", json={"title": "Upload Multiplo"})
+    slug = r_folder.json()["slug"]
+
+    upload_dir = get_upload_dir()
+    files_before = len(list(upload_dir.glob("*")))
+
+    r_mix = client.post(
+        f"/folders/{slug}/photos",
+        files=[
+            ("files", ("valid.jpg", io.BytesIO(JPEG_BYTES), "image/jpeg")),
+            ("files", ("invalid.txt", io.BytesIO(b"texto"), "text/plain")),
+        ],
+        headers={"Accept": "application/json"},
+    )
+    assert r_mix.status_code == 400
+
+    r_page = client.get(f"/folders/{slug}/edit")
+    assert r_page.status_code == 200
+    assert "Nenhuma foto nesta pasta ainda." in r_page.text
+    assert len(list(upload_dir.glob("*"))) == files_before
+
+
+def test_api_add_photo_success_and_delete(client: TestClient) -> None:
+    client.post("/register", data={"username": "user_photo", "email": "photo@example.com", "password": "password123"})
+    r_folder = client.post("/folders", json={"title": "Viagem Paris"})
+    slug = r_folder.json()["slug"]
+
+    # Upload de foto com sucesso
+    r_upload = client.post(
+        f"/folders/{slug}/photos",
+        files={"file": ("torre.jpg", io.BytesIO(JPEG_BYTES), "image/jpeg")},
+        headers={"Accept": "application/json"},
+    )
+    assert r_upload.status_code == 201
+    photo_data = r_upload.json()
+    assert photo_data["id"] is not None
+    assert photo_data["original_name"] == "torre.jpg"
+    assert photo_data["order"] == 0
+    filename = photo_data["filename"]
+    assert storage.file_exists(filename) is True
+
+    # Exclui foto
+    r_del = client.delete(f"/folders/{slug}/photos/{photo_data['id']}")
+    assert r_del.status_code == 200
+    assert r_del.json()["status"] == "ok"
+    assert storage.file_exists(filename) is False
+
+    # Tenta excluir novamente -> 404
+    r_del_again = client.delete(f"/folders/{slug}/photos/{photo_data['id']}")
+    assert r_del_again.status_code == 404
+
+
+def test_api_reorder_photos(client: TestClient) -> None:
+    client.post("/register", data={"username": "user_reorder", "email": "reorder@example.com", "password": "password123"})
+    r_folder = client.post("/folders", json={"title": "Ordem de Fotos"})
+    slug = r_folder.json()["slug"]
+
+    # Adiciona 2 fotos
+    r1 = client.post(
+        f"/folders/{slug}/photos",
+        files={"file": ("f1.jpg", io.BytesIO(JPEG_BYTES), "image/jpeg")},
+        headers={"Accept": "application/json"},
+    )
+    r2 = client.post(
+        f"/folders/{slug}/photos",
+        files={"file": ("f2.png", io.BytesIO(PNG_BYTES), "image/png")},
+        headers={"Accept": "application/json"},
+    )
+    p1 = r1.json()
+    p2 = r2.json()
+
+    # Reordena via PUT
+    r_put = client.put(
+        f"/folders/{slug}/photos/order",
+        json={"photo_ids": [p2["id"], p1["id"]]},
+    )
+    assert r_put.status_code == 200
+    ordered = r_put.json()
+    assert [p["id"] for p in ordered] == [p2["id"], p1["id"]]
+    assert [p["order"] for p in ordered] == [0, 1]
+
+    # Limpeza
+    storage.delete_file(p1["filename"])
+    storage.delete_file(p2["filename"])
+
+
+def test_ssr_folder_edit_page(client: TestClient) -> None:
+    # Anônimo é redirecionado para /login
+    r_anon = client.get("/folders/alguma-pasta/edit", follow_redirects=False)
+    assert r_anon.status_code == 303
+    assert r_anon.headers["location"] == "/login"
+
+    # Cria dono
+    client.post("/register", data={"username": "owner_ssr", "email": "owner@example.com", "password": "password123"})
+    r_f = client.post("/folders", json={"title": "Pasta SSR"})
+    slug = r_f.json()["slug"]
+
+    # Dono acessa página de gerenciar fotos
+    r_owner = client.get(f"/folders/{slug}/edit")
+    assert r_owner.status_code == 200
+    assert "Gerenciar Fotos — Pasta SSR" in r_owner.text
+    assert "Adicionar Fotos" in r_owner.text
+    assert "Nenhuma foto nesta pasta ainda." in r_owner.text
+
+
+def test_ssr_upload_delete_and_move_photos(client: TestClient) -> None:
+    import re
+
+    client.post("/register", data={"username": "ssr_user", "email": "ssr@example.com", "password": "password123"})
+    r_f = client.post("/folders", json={"title": "Fluxo Completo SSR"})
+    slug = r_f.json()["slug"]
+
+    # 1. Upload de 2 fotos via formulário SSR
+    r_up1 = client.post(
+        f"/folders/{slug}/photos",
+        files={"files": ("foto1.jpg", io.BytesIO(JPEG_BYTES), "image/jpeg")},
+        follow_redirects=False,
+    )
+    assert r_up1.status_code == 303
+    assert r_up1.headers["location"] == f"/folders/{slug}/edit"
+
+    r_up2 = client.post(
+        f"/folders/{slug}/photos",
+        files={"files": ("foto2.png", io.BytesIO(PNG_BYTES), "image/png")},
+        follow_redirects=False,
+    )
+    assert r_up2.status_code == 303
+
+    # 2. Verifica se a página renderiza as 2 fotos
+    r_page = client.get(f"/folders/{slug}/edit")
+    assert r_page.status_code == 200
+    assert "foto1.jpg" in r_page.text
+    assert "foto2.png" in r_page.text
+
+    # Extrai os IDs das fotos dos actions de move
+    photo_ids = [int(x) for x in re.findall(rf"/folders/{slug}/photos/(\d+)/move", r_page.text)]
+    assert len(photo_ids) >= 2
+    p1_id, p2_id = photo_ids[0], photo_ids[1]
+
+    # 3. Move a segunda foto para cima
+    r_move = client.post(
+        f"/folders/{slug}/photos/{p2_id}/move",
+        data={"direction": "up"},
+        follow_redirects=False,
+    )
+    assert r_move.status_code == 303
+    assert r_move.headers["location"] == f"/folders/{slug}/edit"
+
+    r_page_after_move = client.get(f"/folders/{slug}/edit")
+    assert "Ordem atualizada com sucesso." in r_page_after_move.text
+
+    # 4. Remove a primeira foto via formulário SSR
+    r_del = client.post(
+        f"/folders/{slug}/photos/{p1_id}/delete",
+        follow_redirects=False,
+    )
+    assert r_del.status_code == 303
+    assert r_del.headers["location"] == f"/folders/{slug}/edit"
+
+    r_page_after_del = client.get(f"/folders/{slug}/edit")
+    assert "Foto removida com sucesso!" in r_page_after_del.text
+    assert "foto1.jpg" not in r_page_after_del.text
+    assert "foto2.png" in r_page_after_del.text
+
+
 

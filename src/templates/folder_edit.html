@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block title %}Gerenciar Fotos — {{ folder.title }}{% endblock %}
+{% block heading %}Gerenciar Fotos{% endblock %}
+
+{% block content %}
+<div class="folder-manage-container">
+  <div class="folder-manage-top">
+    <a href="/me/folders" class="folder-back-link">&larr; Voltar para Minhas Pastas</a>
+    
+    <div class="folder-manage-header-info">
+      <h2 class="folder-title-heading">{{ folder.title }}</h2>
+      <div class="folder-badges">
+        {% if folder.is_public %}
+        <span class="badge badge-public">Pública</span>
+        {% else %}
+        <span class="badge badge-private">Privada</span>
+        {% endif %}
+
+        {% if folder.is_adult %}
+        <span class="badge badge-adult">+18</span>
+        {% endif %}
+      </div>
+    </div>
+    {% if folder.description %}
+    <p class="folder-manage-desc">{{ folder.description }}</p>
+    {% endif %}
+  </div>
+
+  <section class="folder-upload-section">
+    <h3>Adicionar Fotos</h3>
+    <p class="upload-hint">Formatos suportados: JPG, PNG, WEBP, GIF (máximo {{ max_upload_mb }} MB por foto).</p>
+    <form
+      class="upload-form"
+      action="/folders/{{ folder.slug }}/photos"
+      method="post"
+      enctype="multipart/form-data"
+    >
+      <div class="upload-input-group">
+        <input
+          type="file"
+          name="files"
+          accept="image/jpeg,image/png,image/webp,image/gif"
+          multiple
+          required
+        />
+        <button type="submit" class="btn btn-primary">Enviar Fotos</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="folder-photos-section">
+    <div class="folder-photos-header">
+      <h3>Fotos da Pasta</h3>
+      <span class="photos-count">{{ photos | length }} {% if photos | length == 1 %}foto{% else %}fotos{% endif %}</span>
+    </div>
+
+    {% if photos %}
+    <div class="photos-manage-list">
+      {% for photo in photos %}
+      <div class="photo-manage-item">
+        <div class="photo-preview-wrap">
+          <img
+            src="/uploads/{{ photo.filename }}"
+            alt="{{ photo.original_name }}"
+            class="photo-thumbnail"
+            loading="lazy"
+          />
+        </div>
+        
+        <div class="photo-info">
+          <span class="photo-order-badge">#{{ loop.index }}</span>
+          <span class="photo-name" title="{{ photo.original_name }}">{{ photo.original_name }}</span>
+        </div>
+
+        <div class="photo-item-actions">
+          <div class="photo-move-actions">
+            {% if not loop.first %}
+            <form action="/folders/{{ folder.slug }}/photos/{{ photo.id }}/move" method="post">
+              <input type="hidden" name="direction" value="up" />
+              <button type="submit" class="btn btn-sm btn-secondary" title="Mover para cima">&uarr;</button>
+            </form>
+            {% else %}
+            <button class="btn btn-sm btn-secondary btn-placeholder" disabled aria-hidden="true">&uarr;</button>
+            {% endif %}
+
+            {% if not loop.last %}
+            <form action="/folders/{{ folder.slug }}/photos/{{ photo.id }}/move" method="post">
+              <input type="hidden" name="direction" value="down" />
+              <button type="submit" class="btn btn-sm btn-secondary" title="Mover para baixo">&darr;</button>
+            </form>
+            {% else %}
+            <button class="btn btn-sm btn-secondary btn-placeholder" disabled aria-hidden="true">&darr;</button>
+            {% endif %}
+          </div>
+
+          <form
+            action="/folders/{{ folder.slug }}/photos/{{ photo.id }}/delete"
+            method="post"
+            onsubmit="return confirm('Deseja realmente remover esta foto?');"
+          >
+            <button type="submit" class="btn btn-sm btn-danger">Excluir</button>
+          </form>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="photos-empty">
+      <p>Nenhuma foto nesta pasta ainda.</p>
+      <p class="photos-empty-hint">Use o formulário acima para enviar a primeira foto.</p>
+    </div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}
