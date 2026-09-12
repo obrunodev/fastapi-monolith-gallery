@@ -76,6 +76,7 @@ Leia `AGENTS.md` completo. Resumo obrigatório:
 |---------|----------------|
 | `projeto-tlc.mdc` | **Sempre** (`alwaysApply: true`) — contexto e progresso |
 | `fastapi-routes.mdc` | Ao editar `src/routes/**/*.py` |
+| `code-review.mdc` | **Manual** — marque ao pedir revisão de 1 ou N commits |
 
 ## Como rodar o projeto
 

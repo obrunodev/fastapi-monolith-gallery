@@ -1,0 +1,100 @@
+---
+description: Revisão de código de commit(s) específico(s) — padrões TLC (AGENTS.md)
+alwaysApply: false
+---
+
+# Code Review — Projeto TLC
+
+Marque esta rule ao pedir revisão de **1 commit** ou **N commits**. Não implemente correções a menos que o usuário peça.
+
+## 1. Identificar o escopo
+
+Extraia do pedido: hash(es), intervalo (`abc123..def456`), `HEAD`, `HEAD~N` ou branch vs base.
+
+```bash
+# Um commit
+git show --stat <hash>
+git show <hash>
+
+# N commits (intervalo exclusivo do ancestral comum)
+git log --oneline <base>..<head>
+git diff <base>..<head>
+
+# Últimos N commits
+git log -n <N> --oneline
+git diff HEAD~<N>..HEAD
+```
+
+Se o escopo não estiver claro, pergunte antes de revisar.
+
+## 2. Contexto obrigatório
+
+Antes de julgar o diff, leia (só o necessário ao escopo):
+
+- `AGENTS.md` — camadas, testes, o que não fazer
+- `ROADMAP.md` → **Progresso atual** — a mudança avança a tarefa certa?
+- Arquivos tocados fora do diff (imports, templates irmãos, testes existentes)
+
+## 3. Checklist por camada
+
+| Área | Verificar |
+|------|-----------|
+| **Arquitetura** | Monolito FastAPI; sem `controllers/`, hexagonal ou SPA; imports `from src...` |
+| **`routes/`** | Finas: HTTP → schema → service → resposta; sem SQL/filesystem; `response_model` em JSON |
+| **`schemas/`** | Pydantic v2; nomes explícitos; sem I/O nem efeitos colaterais |
+| **`services/`** | Regra de negócio aqui; sem `APIRouter`/`Request`; SQLAlchemy 2.0 (`select()` + `scalar`/`scalars`) |
+| **Templates/static** | `extends base.html`; CSS/JS em `static/`; template só apresenta dados |
+| **Auth** | JSON: `HTTPException(401)`; SSR: flash + redirect `/login`; não repassar `current_user` se `_session_context` já injeta |
+| **HTML+redirect** | `HTMLResponse \| RedirectResponse` + `response_model=None` |
+| **HTML vs JSON** | Media type **primário** do `Accept` (`_wants_json`); nunca `"application/json" in accept` |
+| **SSR pós-criação** | Redirect para listagem do recurso, não `/` |
+| **ORM** | `selectinload()` se template usa relacionamentos (N+1) |
+| **Upload** | `storage.validate_image` / `save_image`; limites em `config.py` |
+| **Testes** | Endpoint novo → teste feliz; `test_*_model.py` vs `test_*.py`; sem fixtures mortas |
+| **ROADMAP** | Se tarefa concluída: checkbox, progresso e `projeto-tlc.mdc` atualizados? |
+| **Git/higiene** | Sem secrets, `/uploads/`, `/data/`; formatação só nos arquivos alterados |
+
+Rotas em `src/routes/**`: aplique também `fastapi-routes.mdc`.
+
+## 4. Severidade
+
+- **blocker** — quebra contrato, segurança, camada errada, teste ausente em endpoint novo, migration sem upgrade
+- **major** — viola convenção do time, N+1, auth/redirect incorreto, ROADMAP desatualizado
+- **minor** — naming, duplicação evitável, falta de type hint público
+- **nit** — estilo; só se relevante ao padrão do repo
+
+## 5. Formato da resposta (português)
+
+```markdown
+## Resumo
+<1–3 frases: o que o(s) commit(s) faz(em) e se está pronto para merge>
+
+## Escopo revisado
+- Commits: `<hashes ou intervalo>`
+- Arquivos: <N> alterados
+
+## Achados
+| Severidade | Arquivo:linha | Problema | Sugestão |
+|------------|---------------|----------|----------|
+| blocker | src/... | ... | ... |
+
+(Se nenhum achado ≥ minor: "Nenhum problema relevante encontrado.")
+
+## Checklist rápido
+- [ ] Camadas respeitadas
+- [ ] Testes adequados
+- [ ] ROADMAP/rule atualizados (se aplicável)
+- [ ] `make test` recomendado / resultado (se rodou)
+
+## Veredicto
+**Aprovar** | **Aprovar com ressalvas** | **Pedir mudanças**
+```
+
+Cite trechos com `arquivo:linha`. Priorize achados acionáveis sobre nits.
+
+## 6. O que não fazer
+
+- Não reescrever o código inteiro na revisão
+- Não sugerir microserviços, SPA ou camadas extras sem pedido do time
+- Não ignorar testes ou migrations no diff
+- Não aprovar endpoint novo sem teste do contrato feliz
