@@ -8,9 +8,9 @@ Monolito FastAPI + Jinja2, alinhado à estrutura atual (`routes` → `schemas` �
 
 | Campo | Valor |
 |-------|-------|
-| **Fase atual** | F0 — Fundação |
-| **Última tarefa concluída** | 0.5 |
-| **Próxima tarefa** | **0.6** — Substituir dashboard por feed vazio "Suas pastas" |
+| **Fase atual** | F1 — Pastas + fotos |
+| **Última tarefa concluída** | 1.1 |
+| **Próxima tarefa** | **1.2** — Modelo `Photo`: folder_id, filename, original_name, order, created_at |
 | **MVP completo?** | Não |
 
 > Ao concluir uma tarefa: marque `[x]` na tabela da fase e atualize esta seção.
@@ -21,13 +21,14 @@ Monolito FastAPI + Jinja2, alinhado à estrutura atual (`routes` → `schemas` �
 
 Uma plataforma onde:
 
-1. Usuários se cadastram, fazem login e gerenciam **pastas (folders)** com várias fotos.
-2. Pastas são **públicas** (qualquer visitante vê) ou **privadas** (só dono + convidados).
-3. Usuários logados **comentam** pastas (em privadas, só convidados).
-4. Usuários logados **curtem** pastas.
-5. Pastas com **conteúdo adulto** exigem confirmação em modal antes de abrir.
-6. Qualquer usuário pode **denunciar** pasta/comentário; **moderadores** revisam; **admins** têm controles extras.
-7. Todo usuário tem **perfil público** com username (sem nível/gamificação ainda).
+1. Usuários se cadastram, fazem login e gerenciam **pastas (folders)** com fotos em `/me/folders`.
+2. A raiz (`/`) é o **feed da comunidade** com pastas públicas recentes; usuários logados também podem alternar para o feed de quem estão **seguindo**.
+3. Pastas são **públicas** (qualquer visitante vê) ou **privadas** (só dono + convidados).
+4. Usuários logados **comentam** e **curtem** pastas (em privadas, só convidados).
+5. Usuários logados podem **seguir / deixar de seguir** outros criadores pelo perfil público `/users/{username}`.
+6. Pastas com **conteúdo adulto** exigem confirmação em modal antes de abrir.
+7. Qualquer usuário pode **denunciar** pasta/comentário; **moderadores** revisam; **admins** têm controles extras.
+8. Todo usuário tem **perfil público** com username, contadores de seguidores/seguindo e suas pastas públicas.
 
 **Fora do MVP:** sistema de níveis, ranking e pontuação por acessos/comentários/curtidas.
 
@@ -36,10 +37,10 @@ Uma plataforma onde:
 ## Visão das fases
 
 ```text
-F0  Fundação          → banco, auth, layout, roles          [em andamento]
-F1  Pastas + fotos    → CRUD, upload, visibilidade
+F0  Fundação          → banco, auth, layout, roles          [concluído]
+F1  Pastas + fotos    → CRUD, upload, visibilidade          [em andamento]
 F2  Privacidade       → convites, regras de acesso
-F3  Interação         → comentários, curtidas
+F3  Interação + Follow  → comentários, curtidas, seguidores, feed de quem segue
 F4  Conteúdo adulto   → flag + modal
 F5  Moderação         → denúncias + painel moderador
 F6  Admin             → controles administrativos
@@ -61,10 +62,10 @@ F8  Gamificação       → níveis, pontos, perfil com level (pós-MVP)
 | 0.3 | [x] | Auth com sessão (cookie): registro, login, logout | `routes/auth.py`, `services/auth.py`, templates |
 | 0.4 | [x] | Middleware/dependency `get_current_user` (opcional/anônimo) | Reutilizável em todas as rotas |
 | 0.5 | [x] | Atualizar `base.html`: nav (login/logout), flash messages | Layout mínimo da galeria |
-| 0.6 | [ ] | Substituir dashboard por feed vazio "Suas pastas" | `/` autenticado vs visitante |
-| 0.7 | [ ] | Testes: registro, login, logout, acesso protegido | `tests/test_auth.py` |
+| 0.6 | [x] | Estruturar feed na raiz `/` (feed público com empty state + CTA para visitante) | Layout inicial do feed em `/` |
+| 0.7 | [x] | Testes: registro, login, logout, feed inicial e navegação | `tests/test_auth.py`, `tests/test_pages.py` |
 
-**Critério de pronto:** usuário cria conta, faz login e vê área logada.
+**Critério de pronto:** usuário cria conta, faz login e vê o feed inicial.
 
 ---
 
@@ -72,18 +73,18 @@ F8  Gamificação       → níveis, pontos, perfil com level (pós-MVP)
 
 **Objetivo:** CRUD de folders com upload de imagens.
 
-| # | Tarefa | Entregável |
-|---|--------|------------|
-| 1.1 | Modelo `Folder`: title, slug, description, owner_id, is_public, is_adult (default false), created_at | Migration |
-| 1.2 | Modelo `Photo`: folder_id, filename, original_name, order, created_at | Migration |
-| 1.3 | Storage local em `uploads/` (configurável por env) | `services/storage.py` |
-| 1.4 | Upload com validação (tipo, tamanho, extensão) | Service + testes |
-| 1.5 | Criar pasta (título, descrição, pública/privada) | `POST /folders` |
-| 1.6 | Listar pastas do usuário logado | `/me/folders` |
-| 1.7 | Adicionar/remover/reordenar fotos na pasta | Rotas de gestão |
-| 1.8 | Página pública da pasta por slug | `GET /folders/{slug}` |
-| 1.9 | Galeria pública: listar pastas públicas recentes | `/explore` ou home para visitantes |
-| 1.10 | Testes: criar pasta, upload, listar, ver pasta pública | `tests/test_folders.py` |
+| # | Status | Tarefa | Entregável |
+|---|--------|--------|------------|
+| 1.1 | [x] | Modelo `Folder`: title, slug, description, owner_id, is_public, is_adult (default false), created_at | Migration |
+| 1.2 | [ ] | Modelo `Photo`: folder_id, filename, original_name, order, created_at | Migration |
+| 1.3 | [ ] | Storage local em `uploads/` (configurável por env) | `services/storage.py` |
+| 1.4 | [ ] | Upload com validação (tipo, tamanho, extensão) | Service + testes |
+| 1.5 | [ ] | Criar pasta (título, descrição, pública/privada) | `POST /folders` |
+| 1.6 | [ ] | Listar pastas do usuário logado | `/me/folders` |
+| 1.7 | [ ] | Adicionar/remover/reordenar fotos na pasta | Rotas de gestão |
+| 1.8 | [ ] | Página pública da pasta por slug | `GET /folders/{slug}` |
+| 1.9 | [ ] | Feed público na raiz `/`: listar pastas públicas recentes da comunidade | Home / feed comunitário |
+| 1.10 | [ ] | Testes: criar pasta, upload, listar, ver pasta pública | `tests/test_folders.py` |
 
 **Critério de pronto:** usuário cria pasta, sobe fotos e qualquer um vê pastas públicas.
 
@@ -108,23 +109,26 @@ F8  Gamificação       → níveis, pontos, perfil com level (pós-MVP)
 
 ---
 
-## Fase 3 — Comentários e curtidas
+## Fase 3 — Interação e Seguidores
 
-**Objetivo:** interação social nas pastas.
+**Objetivo:** interação social nas pastas e rede de conexões entre criadores.
 
 | # | Tarefa | Entregável |
 |---|--------|------------|
 | 3.1 | Modelo `Comment`: folder_id, user_id, body, created_at | Migration |
 | 3.2 | Modelo `FolderLike`: folder_id, user_id (unique) | Migration |
-| 3.3 | Service `can_comment(user, folder)` — pública: logado; privada: convidado/dono | Regra centralizada |
-| 3.4 | Listar comentários na página da pasta | Template + rota |
-| 3.5 | Criar comentário (só logado, com permissão) | `POST /folders/{slug}/comments` |
-| 3.6 | Curtir/descurtir pasta (toggle) | `POST /folders/{slug}/like` |
-| 3.7 | Exibir contador de curtidas e estado "você curtiu" | UI na pasta |
-| 3.8 | Perfil público `/users/{username}` — username + pastas públicas | Sem nível ainda |
-| 3.9 | Testes: comentar em pública/privada, curtir, perfil | `tests/test_interactions.py` |
+| 3.3 | Modelo `Follow`: follower_id, following_id (unique, sem auto-follow) | Migration |
+| 3.4 | Service `can_comment(user, folder)` — pública: logado; privada: convidado/dono | Regra centralizada |
+| 3.5 | Listar comentários na página da pasta | Template + rota |
+| 3.6 | Criar comentário (só logado, com permissão) | `POST /folders/{slug}/comments` |
+| 3.7 | Curtir/descurtir pasta (toggle) | `POST /folders/{slug}/like` |
+| 3.8 | Exibir contador de curtidas e estado "você curtiu" | UI na pasta |
+| 3.9 | Seguir/deixar de seguir usuário (toggle) | `POST /users/{username}/follow` |
+| 3.10 | Perfil público `/users/{username}` — username, pastas públicas, contadores de seguidores/seguindo e botão seguir | Template + rota |
+| 3.11 | Feed na raiz `/`: filtro/aba "Explorar" vs "Seguindo" para usuário logado | `GET /?tab=following` |
+| 3.12 | Testes: comentar, curtir, seguir/deixar de seguir, feed "Seguindo", perfil | `tests/test_interactions.py` |
 
-**Critério de pronto:** visitante logado interage em pública; em privada só convidados comentam.
+**Critério de pronto:** usuário logado interage (comentários/likes), segue outros usuários e visualiza feed personalizado de quem segue.
 
 ---
 
@@ -221,6 +225,7 @@ User ──┬── Folder ──┬── Photo
        │            ├── FolderInvite
        │            ├── Comment
        │            └── FolderLike
+       ├── Follow (follower_id -> following_id)
        └── Report (como reporter ou moderator)
 
 Roles: user | moderator | admin
@@ -238,7 +243,7 @@ Folder: is_public, is_adult
   ↓
 2.1 → 2.2 → 2.3 → 2.4 → 2.5 → 2.6 → 2.7 → 2.8
   ↓
-3.1 → 3.2 → 3.3 → 3.4 → 3.5 → 3.6 → 3.7 → 3.8 → 3.9
+3.1 → 3.2 → 3.3 → 3.4 → 3.5 → 3.6 → 3.7 → 3.8 → 3.9 → 3.10 → 3.11 → 3.12
   ↓
 4.1 → 4.2 → 4.3 → 4.4 → 4.5 → 4.6
   ↓
