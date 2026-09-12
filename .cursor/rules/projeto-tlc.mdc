@@ -5,6 +5,8 @@ alwaysApply: true
 
 # Projeto TLC — Galeria de Imagens
 
+> **Rule automática:** `alwaysApply: true` no frontmatter acima — o Cursor injeta este arquivo em **todas** as sessões deste projeto, sem precisar marcar manualmente.
+
 Monolito **FastAPI + Jinja2** (SSR, sem SPA). Repositório: galeria pública/privada de pastas com fotos.
 
 ## Documentos obrigatórios
@@ -16,6 +18,7 @@ Monolito **FastAPI + Jinja2** (SSR, sem SPA). Repositório: galeria pública/pri
 
 - `GET /health` — health check JSON
 - `GET /` — feed comunitário HTML (empty state + CTA para visitante)
+- `GET /me/folders` — listar pastas do usuário logado (SSR em `my_folders.html` e API JSON)
 - `POST /folders` — criar pasta (JSON, autenticado, `FolderRead`)
 - `GET /folders/new` + `POST /folders/new` — formulário SSR de nova pasta
 - Persistência SQLite: `src/config.py`, `src/db.py`, `src/models.py`, Alembic em `alembic/`
@@ -23,16 +26,16 @@ Monolito **FastAPI + Jinja2** (SSR, sem SPA). Repositório: galeria pública/pri
 - Auth com sessão (cookie): `/register`, `/login`, `POST /logout`
 - `get_current_user` global em `create_app()`; rotas autenticadas usam `Depends(get_current_user)` quando precisam do valor
 - Storage: `src/services/storage.py` — `validate_image`, `save_image`, `/uploads` montado em `main.py`
-- Services: `auth`, `folders` (slugify, `create_folder`), `storage`, `seed`, `passwords`, `health`
+- Services: `auth`, `folders` (slugify, `create_folder`, `list_user_folders`), `storage`, `seed`, `passwords`, `health`
 - Schemas: `auth`, `folder`, `photo`, `health`
-- Templates: `base.html`, `feed.html`, `folder_create.html`, `login.html`, `register.html`
+- Templates: `base.html`, `feed.html`, `folder_create.html`, `login.html`, `register.html`, `my_folders.html`
 - Testes: `test_health`, `test_db`, `test_users`, `test_auth`, `test_pages`, `test_folder_model`, `test_photo_model`, `test_storage`, `test_folders`
 
 ## Próxima tarefa
 
 Consulte `ROADMAP.md` → seção **Progresso atual**. Implemente **uma tarefa por vez**, na ordem do roadmap.
 
-**Atual:** **1.6** — Listar pastas do usuário logado (`/me/folders`)
+**Atual:** **1.7** — Adicionar/remover/reordenar fotos na pasta
 
 ## Ao concluir uma tarefa do ROADMAP
 
@@ -56,9 +59,19 @@ Leia `AGENTS.md` completo. Resumo obrigatório:
 | Auth SSR | flash + `RedirectResponse("/login")` |
 | Templates | Sempre `extends base.html`; CSS/JS em `static/` |
 | Upload | Validar em `storage.validate_image` / `save_image`; limites em `config.py` |
+| HTML vs JSON | Media type **primário** do `Accept` — ver `_wants_json` em `folders.py` e rule `fastapi-routes.mdc` |
+| SSR pós-criação | Redirect para listagem do recurso (ex.: `/me/folders`), não `/` |
+| Listagens ORM | `selectinload()` no service se o template usa relacionamentos (evitar N+1) |
 | Testes | Modelo: `test_*_model.py`; rotas/fluxo: `test_*.py`; sem código morto |
 | Env vars novas | Adicionar em `config.py`, tabela do `README.md` e desta rule se relevante |
 | Git | Não commitar `/uploads/` nem `/data/`; uma tarefa do ROADMAP por PR/commit quando possível |
+
+## Rules adicionais do projeto
+
+| Arquivo | Quando aplica |
+|---------|----------------|
+| `projeto-tlc.mdc` | **Sempre** (`alwaysApply: true`) — contexto e progresso |
+| `fastapi-routes.mdc` | Ao editar `src/routes/**/*.py` |
 
 ## Como rodar o projeto
 

@@ -1,0 +1,55 @@
+---
+description: Convenções FastAPI para rotas SSR e JSON do Projeto TLC
+globs: src/routes/**/*.py
+alwaysApply: false
+---
+
+# Rotas FastAPI — Projeto TLC
+
+Aplique ao editar arquivos em `src/routes/`.
+
+## Camadas
+
+- Rota valida HTTP, chama **service**, devolve resposta. Sem SQL, sem filesystem, sem regra de negócio pesada.
+- Entrada/saída JSON: schemas Pydantic (`response_model` quando for só JSON).
+
+## Autenticação
+
+- `Depends(get_current_user)` quando o handler precisa do usuário (`if current_user is None`, etc.).
+- JSON sem sessão: `HTTPException(401)`.
+- Form SSR sem sessão: `flash()` + `RedirectResponse("/login", status_code=303)`.
+
+## Respostas mistas (HTML + redirect + JSON)
+
+```python
+@router.get("/exemplo", response_model=None)
+def exemplo(...) -> HTMLResponse | RedirectResponse | JSONResponse:
+    ...
+```
+
+- Use `response_model=None` no decorator quando o retorno é union ou `JSONResponse` manual.
+- Não use `response_class=HTMLResponse` se a rota também pode redirecionar.
+
+## HTML vs JSON na mesma rota
+
+```python
+def _wants_json(request: Request) -> bool:
+    accept = request.headers.get("accept", "")
+    if not accept:
+        return False
+    primary = accept.split(",")[0].split(";")[0].strip().lower()
+    return primary == "application/json" or primary.endswith("+json")
+```
+
+- **Proibido:** `"application/json" in accept` (browser pode enviar `text/html, application/json;q=0.9`).
+- Teste com `Accept: application/json` (JSON) e `Accept: text/html, application/json;q=0.9` (HTML).
+
+## Formulários SSR
+
+- Validação via schema Pydantic; erros com `ValidationError` → re-render do template com `status_code=400`.
+- Sucesso: `flash()` + `RedirectResponse` para a página de listagem ou detalhe do recurso criado.
+- Checkboxes não marcados não vêm no POST — trate `None` explicitamente.
+
+## Referência
+
+Copie o estilo de `src/routes/folders.py` e `src/routes/auth.py`.

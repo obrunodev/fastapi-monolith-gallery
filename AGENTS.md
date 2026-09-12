@@ -105,6 +105,9 @@ def health() -> dict:
   - use `Depends(get_current_user)` quando o handler precisa do valor (`if current_user is None`, API JSON com 401);
   - não repasse `current_user` ao template se `_session_context` em `templating.py` já injeta o usuário.
 - Endpoints JSON autenticados: `401` via `HTTPException`. Formulários SSR: flash + `RedirectResponse` para `/login`.
+- Após criar recurso via formulário SSR, redirecione para a **listagem relevante** (ex.: criar pasta → `/me/folders`), não para `/` genérico.
+- Rotas que servem HTML e JSON na mesma URL: negocie pelo **media type primário** do header `Accept` (veja `src/routes/folders.py` → `_wants_json`). Não use `"application/json" in accept`.
+- Listagens que acessam relacionamentos no template (ex.: contagem de fotos): use `selectinload()` no service para evitar N+1.
 
 ### SQLAlchemy (consultas)
 
