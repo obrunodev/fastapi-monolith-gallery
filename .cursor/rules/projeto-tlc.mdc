@@ -19,17 +19,19 @@ Monolito **FastAPI + Jinja2** (SSR, sem SPA). Repositório: galeria pública/pri
 - Persistência SQLite: `src/config.py`, `src/db.py`, `src/models.py`, Alembic em `alembic/`
 - Modelo `User` (username/email únicos, role `user`/`moderator`/`admin`) + seed de admin (`make db-seed`)
 - Modelo `Folder` (title, slug, description, owner_id, is_public, is_adult, created_at) + migration
+- Modelo `Photo` (folder_id, filename, original_name, order, created_at) + migration
 - Auth com sessão (cookie): `/register`, `/login`, `POST /logout`
 - `get_current_user` em todas as rotas (anônimo se não houver sessão válida)
 - Layout: nav de conta e mensagens flash no `base.html`
 - Templates: `src/templates/base.html` + `feed.html`
-- Testes: `tests/test_health.py`, `tests/test_db.py`, `tests/test_users.py`, `tests/test_auth.py`, `tests/test_pages.py`, `tests/test_folder_model.py`
+- Storage local em `src/services/storage.py` (com rota `/uploads` montada)
+- Testes: `tests/test_health.py`, `tests/test_db.py`, `tests/test_users.py`, `tests/test_auth.py`, `tests/test_pages.py`, `tests/test_folder_model.py`, `tests/test_photo_model.py`, `tests/test_storage.py`
 
 ## Próxima tarefa
 
 Consulte `ROADMAP.md` → seção **Progresso atual**. Implemente **uma tarefa por vez**, na ordem do roadmap.
 
-**Atual:** **1.2** — Modelo `Photo`: folder_id, filename, original_name, order, created_at
+**Atual:** **1.4** — Upload com validação (tipo, tamanho, extensão)
 
 ## Ao concluir uma tarefa do ROADMAP
 
@@ -59,6 +61,7 @@ Variáveis opcionais:
 | `ADMIN_EMAIL` | `admin@localhost` | E-mail do seed de admin |
 | `ADMIN_PASSWORD` | `admin` | Senha do seed de admin |
 | `SESSION_SECRET` | `dev-insecure-change-me` | Chave assinatura do cookie de sessão |
+| `UPLOAD_DIR` | `<raiz>/uploads` | Diretório de armazenamento local de fotos |
 
 Comandos extras:
 
