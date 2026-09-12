@@ -1,0 +1,64 @@
+---
+description: Contexto do projeto, progresso do ROADMAP e como rodar localmente
+alwaysApply: true
+---
+
+# Projeto TLC — Galeria de Imagens
+
+Monolito **FastAPI + Jinja2** (SSR, sem SPA). Repositório: galeria pública/privada de pastas com fotos.
+
+## Documentos obrigatórios
+
+1. **`ROADMAP.md`** — fonte da verdade do progresso. Leia a seção **Progresso atual** antes de implementar.
+2. **`AGENTS.md`** — arquitetura, camadas e convenções do time. Siga sempre.
+
+## O que já existe no código
+
+- `GET /health` — health check JSON
+- `GET /` — dashboard HTML (placeholder)
+- Persistência SQLite: `src/config.py`, `src/db.py`, `src/models.py`, Alembic em `alembic/`
+- Templates: `src/templates/base.html` + `dashboard.html`
+- Testes: `tests/test_health.py`, `tests/test_db.py`
+
+## Próxima tarefa
+
+Consulte `ROADMAP.md` → seção **Progresso atual**. Implemente **uma tarefa por vez**, na ordem do roadmap.
+
+## Ao concluir uma tarefa do ROADMAP
+
+1. Marque a tarefa como `[x]` na tabela correspondente em `ROADMAP.md`.
+2. Atualize **Progresso atual** (fase, última concluída, próxima).
+3. Rode `make test` e confirme que passou.
+4. Se criou migration: `make db-upgrade`.
+
+## Como rodar o projeto
+
+Pré-requisitos: **Python 3.12+** e **uv** instalado.
+
+```bash
+make install      # uv sync --group dev
+make db-upgrade   # aplica migrations (cria data/app.db)
+make run          # http://127.0.0.1:8000
+make test         # pytest
+```
+
+Variáveis opcionais:
+
+| Variável | Default | Uso |
+|----------|---------|-----|
+| `DATABASE_URL` | `sqlite:///./data/app.db` | Banco de dados |
+
+Comandos extras:
+
+```bash
+make db-migrate msg="descricao"   # nova migration autogenerate
+uv run alembic upgrade head       # equivalente a db-upgrade
+```
+
+## Features do MVP (visão geral)
+
+Pastas públicas/privadas com fotos, convites, comentários, curtidas, flag +18 com modal, denúncias com moderadores, painel admin, perfis públicos. Gamificação (níveis) é **pós-MVP** (Fase 8). Detalhes em `ROADMAP.md`.
+
+## Papéis de usuário
+
+`user` | `moderator` | `admin`
