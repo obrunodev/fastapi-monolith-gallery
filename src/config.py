@@ -36,3 +36,18 @@ def get_upload_dir() -> Path:
     return UPLOAD_DIR
 
 
+DEFAULT_MAX_UPLOAD_SIZE = 10 * 1024 * 1024  # 10 MB
+
+
+def get_max_upload_size() -> int:
+    env_size = os.getenv("MAX_UPLOAD_SIZE")
+    if env_size:
+        try:
+            val = int(env_size)
+            if val > 0:
+                return val
+        except ValueError:
+            pass
+    return DEFAULT_MAX_UPLOAD_SIZE
+
+
