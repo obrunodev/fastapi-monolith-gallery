@@ -4,9 +4,12 @@ import unicodedata
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
 
-from src.models import Folder, Photo
+from src.models import Folder, Photo, User
 from src.schemas.folder import FolderCreate
+from src.schemas.photo import PhotoReorderRequest
 from src.services import storage
+
+FEED_PUBLIC_FOLDER_LIMIT = 20
 
 
 def slugify(text: str) -> str:
@@ -77,6 +80,50 @@ def get_folder_by_slug_or_id(db: Session, identifier: str | int) -> Folder | Non
     if folder is None and identifier.isdigit():
         folder = get_folder_by_id(db, int(identifier))
     return folder
+
+
+def get_folder_with_photos(db: Session, identifier: str | int) -> Folder | None:
+    """Busca uma pasta carregando antecipadamente suas fotos e o proprietário."""
+    base_stmt = select(Folder).options(selectinload(Folder.photos), selectinload(Folder.owner))
+    if isinstance(identifier, int):
+        return db.scalar(base_stmt.where(Folder.id == identifier))
+    folder = db.scalar(base_stmt.where(Folder.slug == identifier))
+    if folder is None and identifier.isdigit():
+        folder = db.scalar(base_stmt.where(Folder.id == int(identifier)))
+    return folder
+
+
+def can_view_folder(folder: Folder, current_user: User | None) -> bool:
+    """Verifica se o usuário pode visualizar a pasta (pública: todos; privada: somente dono no MVP)."""
+    if folder.is_public:
+        return True
+    return current_user is not None and current_user.id == folder.owner_id
+
+
+def resolve_reorder_photo_ids(payload: PhotoReorderRequest) -> list[int]:
+    """Extrai a lista ordenada de IDs de fotos a partir do payload de reordenação."""
+    if payload.photo_ids is not None:
+        return payload.photo_ids
+    if payload.photos is not None:
+        sorted_items = sorted(payload.photos, key=lambda item: item.order)
+        return [item.id for item in sorted_items]
+    return []
+
+
+def list_recent_public_folders(
+    db: Session,
+    limit: int = FEED_PUBLIC_FOLDER_LIMIT,
+) -> list[Folder]:
+    """Lista as pastas públicas mais recentes da comunidade, carregando autor e fotos."""
+    stmt = (
+        select(Folder)
+        .where(Folder.is_public.is_(True))
+        .options(selectinload(Folder.owner), selectinload(Folder.photos))
+        .order_by(Folder.created_at.desc(), Folder.id.desc())
+        .limit(limit)
+    )
+    return list(db.scalars(stmt).all())
+
 
 
 def get_folder_photos(db: Session, folder_id: int) -> list[Photo]:

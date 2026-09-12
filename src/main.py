@@ -25,6 +25,10 @@ def create_app() -> FastAPI:
     app.mount("/static", StaticFiles(directory=SRC_DIR / "static"), name="static")
     upload_dir = get_upload_dir()
     upload_dir.mkdir(parents=True, exist_ok=True)
+    # MVP: arquivos em /uploads são servidos publicamente (StaticFiles), sem checagem de
+    # permissão por pasta. Ocultar a página privada não impede acesso direto à URL da foto.
+    # Antes de produção: servir uploads via rota autenticada (can_view_folder) ou storage
+    # com URLs assinadas/temporárias. Ver README.md → "Limitações conhecidas do MVP".
     app.mount("/uploads", StaticFiles(directory=upload_dir), name="uploads")
     app.include_router(health_router)
     app.include_router(auth_router)

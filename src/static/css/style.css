@@ -208,6 +208,10 @@ form button {
   color: #94a3b8;
 }
 
+.feed-empty-action {
+  margin-top: 1rem;
+}
+
 .auth-form textarea {
   font: inherit;
   padding: 0.5rem 0.65rem;
@@ -559,6 +563,257 @@ form button {
   font-size: 0.85rem;
   color: #94a3b8;
 }
+
+/* Folder Detail & Gallery */
+.folder-detail-container {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.folder-nav-back {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.folder-nav-separator {
+  color: #cbd5e1;
+}
+
+.folder-detail-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.folder-detail-heading-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.folder-detail-title {
+  margin: 0;
+  font-size: 1.75rem;
+  color: #0f172a;
+}
+
+.folder-meta-author {
+  margin: 0.35rem 0 0;
+  font-size: 0.9rem;
+  color: #64748b;
+}
+
+.folder-meta-author strong {
+  color: #334155;
+}
+
+.folder-detail-desc {
+  margin: 0.75rem 0 0;
+  font-size: 1rem;
+  color: #475569;
+  line-height: 1.5;
+}
+
+.gallery-section {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+}
+
+.gallery-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+}
+
+.gallery-header h3 {
+  margin: 0;
+  font-size: 1.15rem;
+  color: #1e293b;
+}
+
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1.25rem;
+}
+
+.gallery-card {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.gallery-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08);
+}
+
+.gallery-img-wrap {
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: #e2e8f0;
+}
+
+.gallery-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.gallery-caption {
+  padding: 0.6rem 0.75rem;
+  font-size: 0.82rem;
+  color: #475569;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border-top: 1px solid #f1f5f9;
+}
+
+.gallery-empty {
+  border: 1px dashed #cbd5e1;
+  border-radius: 0.5rem;
+  padding: 3rem 1.5rem;
+  text-align: center;
+  color: #64748b;
+}
+
+.gallery-empty p {
+  margin: 0.25rem 0;
+}
+
+.gallery-empty-hint {
+  font-size: 0.9rem;
+  color: #94a3b8;
+}
+
+.gallery-empty-action {
+  margin-top: 1rem;
+}
+
+/* Public Feed Grid */
+.feed-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.25rem;
+}
+
+.feed-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.feed-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.06);
+}
+
+.feed-card-cover-link {
+  text-decoration: none;
+  display: block;
+}
+
+.feed-card-cover {
+  height: 160px;
+  background: #f1f5f9;
+  overflow: hidden;
+  position: relative;
+}
+
+.feed-card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.feed-card-placeholder {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  font-size: 0.9rem;
+}
+
+.feed-card-body {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.feed-card-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.feed-card-title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.feed-card-title a {
+  color: #0f172a;
+  text-decoration: none;
+}
+
+.feed-card-title a:hover {
+  text-decoration: underline;
+}
+
+.feed-card-desc {
+  margin: 0;
+  font-size: 0.88rem;
+  color: #64748b;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.feed-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.82rem;
+  color: #94a3b8;
+  border-top: 1px solid #f1f5f9;
+  padding-top: 0.65rem;
+}
+
+.feed-card-author {
+  color: #475569;
+  font-weight: 500;
+}
+
 
 
 

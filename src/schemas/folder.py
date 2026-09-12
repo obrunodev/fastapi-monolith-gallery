@@ -1,6 +1,9 @@
 from datetime import datetime
+from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+from src.schemas.photo import PhotoRead
 
 
 class FolderCreate(BaseModel):
@@ -39,3 +42,19 @@ class FolderRead(BaseModel):
     is_public: bool
     is_adult: bool
     created_at: datetime
+
+
+class FolderDetailRead(FolderRead):
+    photos: list[PhotoRead] = []
+    owner_username: str
+
+    @model_validator(mode="before")
+    @classmethod
+    def load_from_folder(cls, data: Any) -> Any:
+        if hasattr(data, "owner") and hasattr(data, "photos"):
+            payload = FolderRead.model_validate(data).model_dump()
+            payload["photos"] = data.photos
+            payload["owner_username"] = data.owner.username
+            return payload
+        return data
+

@@ -18,13 +18,67 @@
 <section class="feed-section">
   <div class="feed-header">
     <h3>Explorar</h3>
+    {% if folders %}
+    <span class="photos-count">{{ folders | length }} {% if folders | length == 1 %}pasta{% else %}pastas{% endif %}</span>
+    {% endif %}
   </div>
 
+  {% if folders %}
+  <div class="feed-grid">
+    {% for folder in folders %}
+    <article class="feed-card">
+      <a href="/folders/{{ folder.slug }}" class="feed-card-cover-link">
+        <div class="feed-card-cover">
+          {% if folder.photos %}
+          <img
+            src="/uploads/{{ folder.photos[0].filename }}"
+            alt="{{ folder.photos[0].original_name }}"
+            class="feed-card-img"
+            loading="lazy"
+          />
+          {% else %}
+          <div class="feed-card-placeholder">Sem fotos</div>
+          {% endif %}
+        </div>
+      </a>
+
+      <div class="feed-card-body">
+        <div class="feed-card-title-row">
+          <h4 class="feed-card-title">
+            <a href="/folders/{{ folder.slug }}">{{ folder.title }}</a>
+          </h4>
+          <div class="folder-badges">
+            {% if folder.is_adult %}
+            <span class="badge badge-adult">+18</span>
+            {% endif %}
+          </div>
+        </div>
+
+        {% if folder.description %}
+        <p class="feed-card-desc">{{ folder.description }}</p>
+        {% endif %}
+
+        <div class="feed-card-footer">
+          <span class="feed-card-author">por @{{ folder.owner.username }}</span>
+          <span class="feed-card-meta">
+            {{ folder.photos | length }} {% if folder.photos | length == 1 %}foto{% else %}fotos{% endif %}
+          </span>
+        </div>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
   <div class="feed-empty">
     <p>Nenhuma pasta pública publicada ainda.</p>
     {% if logged_in %}
-    <p class="feed-empty-hint">Em breve você poderá criar suas pastas e compartilhar fotos!</p>
+    <p class="feed-empty-hint">Seja o primeiro a compartilhar fotos com a comunidade.</p>
+    <div class="feed-empty-action">
+      <a href="/folders/new" class="btn btn-primary">Criar pasta</a>
+    </div>
     {% endif %}
   </div>
+  {% endif %}
 </section>
 {% endblock %}
+

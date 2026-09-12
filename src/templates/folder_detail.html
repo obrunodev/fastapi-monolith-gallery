@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}{{ folder.title }} — Galeria{% endblock %}
+{% block heading %}{{ folder.title }}{% endblock %}
+
+{% block content %}
+<div class="folder-detail-container">
+  <div class="folder-detail-header">
+    <div class="folder-nav-back">
+      <a href="/" class="folder-back-link">&larr; Voltar para o Feed</a>
+      {% if is_owner %}
+      <span class="folder-nav-separator">&bull;</span>
+      <a href="/me/folders" class="folder-back-link">Minhas Pastas</a>
+      {% endif %}
+    </div>
+
+    <div class="folder-detail-title-row">
+      <div class="folder-detail-heading-wrap">
+        <h2 class="folder-detail-title">{{ folder.title }}</h2>
+        <div class="folder-badges">
+          {% if folder.is_public %}
+          <span class="badge badge-public">Pública</span>
+          {% else %}
+          <span class="badge badge-private">Privada</span>
+          {% endif %}
+
+          {% if folder.is_adult %}
+          <span class="badge badge-adult">+18</span>
+          {% endif %}
+        </div>
+      </div>
+
+      {% if is_owner %}
+      <div class="folder-owner-actions">
+        <a href="/folders/{{ folder.slug }}/edit" class="btn btn-secondary btn-sm">Gerenciar fotos</a>
+      </div>
+      {% endif %}
+    </div>
+
+    <p class="folder-meta-author">
+      Criado por <strong>@{{ folder.owner.username }}</strong>
+      {% if folder.created_at %}
+      em {{ folder.created_at.strftime("%d/%m/%Y") }}
+      {% endif %}
+    </p>
+
+    {% if folder.description %}
+    <p class="folder-detail-desc">{{ folder.description }}</p>
+    {% endif %}
+  </div>
+
+  <section class="gallery-section">
+    <div class="gallery-header">
+      <h3>Fotos</h3>
+      <span class="photos-count">{{ folder.photos | length }} {% if folder.photos | length == 1 %}foto{% else %}fotos{% endif %}</span>
+    </div>
+
+    {% if folder.photos %}
+    <div class="gallery-grid">
+      {% for photo in folder.photos %}
+      <figure class="gallery-card">
+        <div class="gallery-img-wrap">
+          <img
+            src="/uploads/{{ photo.filename }}"
+            alt="{{ photo.original_name }}"
+            class="gallery-img"
+            loading="lazy"
+          />
+        </div>
+        <figcaption class="gallery-caption" title="{{ photo.original_name }}">
+          {{ photo.original_name }}
+        </figcaption>
+      </figure>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="gallery-empty">
+      <p>Esta pasta ainda não possui fotos.</p>
+      {% if is_owner %}
+      <p class="gallery-empty-hint">Como você é o proprietário, pode adicionar fotos agora mesmo.</p>
+      <div class="gallery-empty-action">
+        <a href="/folders/{{ folder.slug }}/edit" class="btn btn-primary btn-sm">Adicionar fotos</a>
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

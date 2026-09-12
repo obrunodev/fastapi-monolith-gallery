@@ -7,8 +7,8 @@ from src.config import get_max_upload_size
 from src.db import get_db
 from src.deps import get_current_user
 from src.flash import flash
-from src.models import User
-from src.schemas.folder import FolderCreate, FolderRead
+from src.models import Folder, User
+from src.schemas.folder import FolderCreate, FolderDetailRead, FolderRead
 from src.schemas.photo import PhotoDeleteResponse, PhotoRead, PhotoReorderRequest
 from src.services import folders as folders_service
 from src.services.storage import StorageValidationError
@@ -24,6 +24,51 @@ def _wants_json(request: Request) -> bool:
         return False
     primary = accept.split(",")[0].split(";")[0].strip().lower()
     return primary == "application/json" or primary.endswith("+json")
+
+
+def _get_folder_or_404(db: Session, slug: str) -> Folder:
+    folder = folders_service.get_folder_by_slug_or_id(db, slug)
+    if folder is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Pasta não encontrada.")
+    return folder
+
+
+def _redirect_login_if_anonymous(
+    request: Request,
+    current_user: User | None,
+    login_message: str,
+) -> RedirectResponse | None:
+    if current_user is None:
+        flash(request, login_message)
+        return RedirectResponse("/login", status_code=status.HTTP_303_SEE_OTHER)
+    return None
+
+
+def _require_owned_folder(
+    db: Session,
+    slug: str,
+    current_user: User,
+    *,
+    forbidden_detail: str,
+) -> Folder:
+    folder = _get_folder_or_404(db, slug)
+    if folder.owner_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=forbidden_detail)
+    return folder
+
+
+def _require_owner_json(
+    current_user: User | None,
+    folder: Folder,
+    *,
+    auth_detail: str,
+    forbidden_detail: str,
+) -> User:
+    if current_user is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=auth_detail)
+    if folder.owner_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=forbidden_detail)
+    return current_user
 
 
 @router.get("/me/folders", response_model=None)
@@ -166,19 +211,18 @@ def folder_edit_page(
     current_user: User | None = Depends(get_current_user),
 ) -> HTMLResponse | RedirectResponse:
     """Exibe a tela de gerenciamento de fotos da pasta (upload, exclusão, reordenação)."""
-    if current_user is None:
-        flash(request, "Faça login para gerenciar suas pastas.")
-        return RedirectResponse("/login", status_code=status.HTTP_303_SEE_OTHER)
+    redirect = _redirect_login_if_anonymous(
+        request, current_user, "Faça login para gerenciar suas pastas."
+    )
+    if redirect is not None:
+        return redirect
 
-    folder = folders_service.get_folder_by_slug_or_id(db, slug)
-    if folder is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Pasta não encontrada.")
-
-    if folder.owner_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Você não tem permissão para gerenciar esta pasta.",
-        )
+    folder = _require_owned_folder(
+        db,
+        slug,
+        current_user,
+        forbidden_detail="Você não tem permissão para gerenciar esta pasta.",
+    )
 
     photos = folders_service.get_folder_photos(db, folder.id)
     max_upload_mb = get_max_upload_size() // (1024 * 1024)
@@ -216,15 +260,13 @@ def add_photos_to_folder(
         flash(request, "Faça login para adicionar fotos.")
         return RedirectResponse("/login", status_code=status.HTTP_303_SEE_OTHER)
 
-    folder = folders_service.get_folder_by_slug_or_id(db, slug)
-    if folder is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Pasta não encontrada.")
-
-    if folder.owner_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Você não tem permissão para adicionar fotos nesta pasta.",
-        )
+    folder = _get_folder_or_404(db, slug)
+    _require_owner_json(
+        current_user,
+        folder,
+        auth_detail="Autenticação necessária para adicionar fotos.",
+        forbidden_detail="Você não tem permissão para adicionar fotos nesta pasta.",
+    )
 
     upload_list: list[UploadFile] = []
     if file is not None and file.filename:
@@ -302,21 +344,13 @@ def delete_photo_api(
     current_user: User | None = Depends(get_current_user),
 ) -> PhotoDeleteResponse:
     """Remove uma foto da pasta via API JSON."""
-    if current_user is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Autenticação necessária para remover fotos.",
-        )
-
-    folder = folders_service.get_folder_by_slug_or_id(db, slug)
-    if folder is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Pasta não encontrada.")
-
-    if folder.owner_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Você não tem permissão para remover fotos desta pasta.",
-        )
+    folder = _get_folder_or_404(db, slug)
+    _require_owner_json(
+        current_user,
+        folder,
+        auth_detail="Autenticação necessária para remover fotos.",
+        forbidden_detail="Você não tem permissão para remover fotos desta pasta.",
+    )
 
     filename = folders_service.remove_photo_from_folder(db, folder, photo_id)
     if filename is None:
@@ -339,19 +373,16 @@ def delete_photo_form(
     current_user: User | None = Depends(get_current_user),
 ) -> HTMLResponse | RedirectResponse:
     """Remove uma foto da pasta via formulário HTML (sem JS)."""
-    if current_user is None:
-        flash(request, "Faça login para remover fotos.")
-        return RedirectResponse("/login", status_code=status.HTTP_303_SEE_OTHER)
+    redirect = _redirect_login_if_anonymous(request, current_user, "Faça login para remover fotos.")
+    if redirect is not None:
+        return redirect
 
-    folder = folders_service.get_folder_by_slug_or_id(db, slug)
-    if folder is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Pasta não encontrada.")
-
-    if folder.owner_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Você não tem permissão para remover fotos desta pasta.",
-        )
+    folder = _require_owned_folder(
+        db,
+        slug,
+        current_user,
+        forbidden_detail="Você não tem permissão para remover fotos desta pasta.",
+    )
 
     filename = folders_service.remove_photo_from_folder(db, folder, photo_id)
     if filename is None:
@@ -374,23 +405,15 @@ def reorder_photos_api(
     current_user: User | None = Depends(get_current_user),
 ) -> list[PhotoRead]:
     """Reordena as fotos de uma pasta via PUT JSON."""
-    if current_user is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Autenticação necessária para reordenar fotos.",
-        )
+    folder = _get_folder_or_404(db, slug)
+    _require_owner_json(
+        current_user,
+        folder,
+        auth_detail="Autenticação necessária para reordenar fotos.",
+        forbidden_detail="Você não tem permissão para alterar esta pasta.",
+    )
 
-    folder = folders_service.get_folder_by_slug_or_id(db, slug)
-    if folder is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Pasta não encontrada.")
-
-    if folder.owner_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Você não tem permissão para alterar esta pasta.",
-        )
-
-    ordered_ids = payload.get_ordered_ids()
+    ordered_ids = folders_service.resolve_reorder_photo_ids(payload)
     try:
         updated = folders_service.reorder_folder_photos(db, folder, ordered_ids)
         db.commit()
@@ -422,19 +445,16 @@ def move_photo_order_form(
     current_user: User | None = Depends(get_current_user),
 ) -> HTMLResponse | RedirectResponse:
     """Move a foto uma posição acima ou abaixo via formulário HTML."""
-    if current_user is None:
-        flash(request, "Faça login para reordenar fotos.")
-        return RedirectResponse("/login", status_code=status.HTTP_303_SEE_OTHER)
+    redirect = _redirect_login_if_anonymous(request, current_user, "Faça login para reordenar fotos.")
+    if redirect is not None:
+        return redirect
 
-    folder = folders_service.get_folder_by_slug_or_id(db, slug)
-    if folder is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Pasta não encontrada.")
-
-    if folder.owner_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Você não tem permissão para alterar esta pasta.",
-        )
+    folder = _require_owned_folder(
+        db,
+        slug,
+        current_user,
+        forbidden_detail="Você não tem permissão para alterar esta pasta.",
+    )
 
     try:
         moved = folders_service.move_photo_order(db, folder, photo_id, direction)
@@ -447,4 +467,37 @@ def move_photo_order_form(
         flash(request, str(exc), "error")
 
     return RedirectResponse(f"/folders/{folder.slug}/edit", status_code=status.HTTP_303_SEE_OTHER)
+
+
+@router.get("/folders/{slug}", response_model=None)
+def get_folder_page(
+    slug: str,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_current_user),
+) -> HTMLResponse | JSONResponse:
+    """Exibe os detalhes e fotos de uma pasta pública (ou privada se for o dono)."""
+    is_json = _wants_json(request)
+
+    folder = folders_service.get_folder_with_photos(db, slug)
+    if folder is None or not folders_service.can_view_folder(folder, current_user):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Pasta não encontrada.")
+
+    if is_json:
+        return JSONResponse(
+            content=FolderDetailRead.model_validate(folder).model_dump(mode="json")
+        )
+
+    is_owner = current_user is not None and current_user.id == folder.owner_id
+
+    return templates.TemplateResponse(
+        request,
+        "folder_detail.html",
+        {
+            "title": f"{folder.title} — Galeria",
+            "folder": folder,
+            "is_owner": is_owner,
+        },
+    )
+
 

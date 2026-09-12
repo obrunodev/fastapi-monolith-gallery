@@ -8,9 +8,9 @@ Monolito FastAPI + Jinja2, alinhado à estrutura atual (`routes` → `schemas` �
 
 | Campo | Valor |
 |-------|-------|
-| **Fase atual** | F1 — Pastas + fotos |
-| **Última tarefa concluída** | 1.7 |
-| **Próxima tarefa** | **1.8** — Página pública da pasta por slug |
+| **Fase atual** | F2 — Privacidade |
+| **Última tarefa concluída** | 1.10 (Fase 1 concluída) |
+| **Próxima tarefa** | **2.1** — Modelo `FolderInvite`: folder_id, user_id, invited_by, status |
 | **MVP completo?** | Não |
 
 > Ao concluir uma tarefa: marque `[x]` na tabela da fase e atualize esta seção.
@@ -38,8 +38,8 @@ Uma plataforma onde:
 
 ```text
 F0  Fundação          → banco, auth, layout, roles          [concluído]
-F1  Pastas + fotos    → CRUD, upload, visibilidade          [em andamento]
-F2  Privacidade       → convites, regras de acesso
+F1  Pastas + fotos    → CRUD, upload, visibilidade          [concluído]
+F2  Privacidade       → convites, regras de acesso          [a iniciar]
 F3  Interação + Follow  → comentários, curtidas, seguidores, feed de quem segue
 F4  Conteúdo adulto   → flag + modal
 F5  Moderação         → denúncias + painel moderador
@@ -82,9 +82,10 @@ F8  Gamificação       → níveis, pontos, perfil com level (pós-MVP)
 | 1.5 | [x] | Criar pasta (título, descrição, pública/privada) | `POST /folders` |
 | 1.6 | [x] | Listar pastas do usuário logado | `/me/folders` |
 | 1.7 | [x] | Adicionar/remover/reordenar fotos na pasta | Rotas de gestão |
-| 1.8 | [ ] | Página pública da pasta por slug | `GET /folders/{slug}` |
-| 1.9 | [ ] | Feed público na raiz `/`: listar pastas públicas recentes da comunidade | Home / feed comunitário |
-| 1.10 | [ ] | Testes: criar pasta, upload, listar, ver pasta pública | `tests/test_folders.py` |
+| 1.8 | [x] | Página pública da pasta por slug | `GET /folders/{slug}` |
+| 1.9 | [x] | Feed público na raiz `/`: listar pastas públicas recentes da comunidade | Home / feed comunitário |
+| 1.10 | [x] | Testes: criar pasta, upload, listar, ver pasta pública | `tests/test_folders.py` |
+
 
 **Critério de pronto:** usuário cria pasta, sobe fotos e qualquer um vê pastas públicas.
 

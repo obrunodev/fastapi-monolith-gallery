@@ -41,11 +41,3 @@ class PhotoReorderRequest(BaseModel):
             raise ValueError("Informe 'photo_ids' ou 'photos' para reordenar.")
         return self
 
-    def get_ordered_ids(self) -> list[int]:
-        if self.photo_ids is not None:
-            return self.photo_ids
-        if self.photos is not None:
-            sorted_items = sorted(self.photos, key=lambda item: item.order)
-            return [item.id for item in sorted_items]
-        return []
-

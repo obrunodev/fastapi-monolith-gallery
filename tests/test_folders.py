@@ -722,4 +722,192 @@ def test_ssr_upload_delete_and_move_photos(client: TestClient) -> None:
     assert "foto2.png" in r_page_after_del.text
 
 
+# --- Testes das Tarefas 1.8, 1.9 e 1.10: Página Pública por Slug e Feed Comunitário ---
+
+
+def test_folder_detail_public_accessible_by_anyone(client: TestClient) -> None:
+    client.post("/register", data={"username": "creator", "email": "c@example.com", "password": "password123"})
+    r_f = client.post("/folders", json={"title": "Paisagens do Sul", "description": "Serras e praias", "is_public": True})
+    slug = r_f.json()["slug"]
+
+    # Adiciona 1 foto
+    client.post(
+        f"/folders/{slug}/photos",
+        files={"file": ("serra.jpg", io.BytesIO(JPEG_BYTES), "image/jpeg")},
+    )
+
+    # 1. Dono acessa -> vê detalhes, autor, fotos e botão "Gerenciar fotos"
+    r_owner = client.get(f"/folders/{slug}")
+    assert r_owner.status_code == 200
+    assert "Paisagens do Sul" in r_owner.text
+    assert "@creator" in r_owner.text
+    assert "serra.jpg" in r_owner.text
+    assert "Gerenciar fotos" in r_owner.text
+
+    # 2. Desloga e anônimo acessa -> vê detalhes e foto, mas NÃO vê "Gerenciar fotos"
+    client.post("/logout")
+    r_anon = client.get(f"/folders/{slug}")
+    assert r_anon.status_code == 200
+    assert "Paisagens do Sul" in r_anon.text
+    assert "@creator" in r_anon.text
+    assert "serra.jpg" in r_anon.text
+    assert "Gerenciar fotos" not in r_anon.text
+
+
+def test_folder_detail_private_permissions(client: TestClient) -> None:
+    client.post("/register", data={"username": "secret_agent", "email": "agent@example.com", "password": "password123"})
+    r_f = client.post("/folders", json={"title": "Arquivos Confidenciais", "is_public": False})
+    slug = r_f.json()["slug"]
+
+    # Dono acessa -> sucesso (200)
+    r_owner = client.get(f"/folders/{slug}")
+    assert r_owner.status_code == 200
+    assert "Arquivos Confidenciais" in r_owner.text
+    assert "Privada" in r_owner.text
+
+    # Desloga: anônimo acessa -> 404 (para não revelar existência)
+    client.post("/logout")
+    r_anon = client.get(f"/folders/{slug}")
+    assert r_anon.status_code == 404
+
+    # Outro usuário autenticado acessa -> 404
+    client.post("/register", data={"username": "curious_user", "email": "curious@example.com", "password": "password123"})
+    r_other = client.get(f"/folders/{slug}")
+    assert r_other.status_code == 404
+
+
+def test_folder_detail_private_json_returns_404(client: TestClient) -> None:
+    client.post("/register", data={"username": "private_api", "email": "priv@example.com", "password": "password123"})
+    r_f = client.post("/folders", json={"title": "Privada API", "is_public": False})
+    slug = r_f.json()["slug"]
+
+    client.post("/logout")
+    r_json = client.get(f"/folders/{slug}", headers={"Accept": "application/json"})
+    assert r_json.status_code == 404
+
+
+def test_folder_detail_not_found(client: TestClient) -> None:
+    response = client.get("/folders/pasta-que-nao-existe")
+    assert response.status_code == 404
+
+
+def test_folder_detail_json_api(client: TestClient) -> None:
+    client.post("/register", data={"username": "api_user", "email": "api@example.com", "password": "password123"})
+    r_f = client.post("/folders", json={"title": "Pasta API", "is_public": True})
+    slug = r_f.json()["slug"]
+
+    client.post(
+        f"/folders/{slug}/photos",
+        files={"file": ("api_foto.jpg", io.BytesIO(JPEG_BYTES), "image/jpeg")},
+    )
+
+    r_json = client.get(f"/folders/{slug}", headers={"Accept": "application/json"})
+    assert r_json.status_code == 200
+    data = r_json.json()
+    assert data["title"] == "Pasta API"
+    assert data["slug"] == slug
+    assert data["is_public"] is True
+    assert data["owner_username"] == "api_user"
+    assert len(data["photos"]) == 1
+    assert data["photos"][0]["original_name"] == "api_foto.jpg"
+
+
+def test_public_feed_displays_recent_folders_and_excludes_private(client: TestClient) -> None:
+    client.post("/register", data={"username": "photographer", "email": "photo@test.com", "password": "password123"})
+
+    # Cria pasta pública com foto
+    r_pub1 = client.post("/folders", json={"title": "Natureza Viva", "is_public": True})
+    slug_pub1 = r_pub1.json()["slug"]
+    client.post(
+        f"/folders/{slug_pub1}/photos",
+        files={"file": ("arvore.jpg", io.BytesIO(JPEG_BYTES), "image/jpeg")},
+    )
+
+    # Cria pasta privada
+    client.post("/folders", json={"title": "Segredos Pessoais", "is_public": False})
+
+    # Cria outra pasta pública mais recente
+    client.post("/folders", json={"title": "Arquitetura Urbana", "is_public": True})
+
+    # Desloga para verificar como visitante no feed público
+    client.post("/logout")
+    r_feed = client.get("/")
+    assert r_feed.status_code == 200
+
+    # Deve exibir as pastas públicas
+    assert "Natureza Viva" in r_feed.text
+    assert "Arquitetura Urbana" in r_feed.text
+    assert "@photographer" in r_feed.text
+
+    # NÃO deve exibir a pasta privada
+    assert "Segredos Pessoais" not in r_feed.text
+
+
+def test_phase1_full_integration_flow(client: TestClient) -> None:
+    # 1. Usuário cria conta
+    client.post("/register", data={"username": "beatriz", "email": "beatriz@example.com", "password": "password123"})
+
+    # 2. Cria pasta pública
+    r_create = client.post(
+        "/folders/new",
+        data={"title": "Minha Viagem 2026", "description": "Roteiro pelo Brasil", "is_public": "true"},
+        follow_redirects=False,
+    )
+    assert r_create.status_code == 303
+    assert r_create.headers["location"] == "/me/folders"
+
+    # 3. Listagem /me/folders
+    r_my = client.get("/me/folders")
+    assert r_my.status_code == 200
+    assert "Minha Viagem 2026" in r_my.text
+
+    # 4. Upload de 2 fotos
+    r_up1 = client.post(
+        "/folders/minha-viagem-2026/photos",
+        files={"file": ("foto1.jpg", io.BytesIO(JPEG_BYTES), "image/jpeg")},
+        headers={"Accept": "application/json"},
+    )
+    assert r_up1.status_code == 201
+    photo1 = r_up1.json()
+
+    r_up2 = client.post(
+        "/folders/minha-viagem-2026/photos",
+        files={"file": ("foto2.png", io.BytesIO(PNG_BYTES), "image/png")},
+        headers={"Accept": "application/json"},
+    )
+    assert r_up2.status_code == 201
+    photo2 = r_up2.json()
+
+    # 5. Reordena fotos (foto2 na frente)
+    r_reorder = client.put(
+        "/folders/minha-viagem-2026/photos/order",
+        json={"photo_ids": [photo2["id"], photo1["id"]]},
+    )
+    assert r_reorder.status_code == 200
+    assert [p["id"] for p in r_reorder.json()] == [photo2["id"], photo1["id"]]
+
+    # 6. Acesso à página pública por slug
+    r_detail = client.get("/folders/minha-viagem-2026")
+    assert r_detail.status_code == 200
+    assert "Minha Viagem 2026" in r_detail.text
+    assert "@beatriz" in r_detail.text
+    assert "foto1.jpg" in r_detail.text
+    assert "foto2.png" in r_detail.text
+
+    # 7. Visitante anônimo vê no feed e na página pública
+    client.post("/logout")
+    r_feed = client.get("/")
+    assert "Minha Viagem 2026" in r_feed.text
+    assert "@beatriz" in r_feed.text
+
+    r_public_view = client.get("/folders/minha-viagem-2026")
+    assert r_public_view.status_code == 200
+    assert "Gerenciar fotos" not in r_public_view.text
+
+    # Limpeza de storage
+    storage.delete_file(photo1["filename"])
+    storage.delete_file(photo2["filename"])
+
+
+
 
