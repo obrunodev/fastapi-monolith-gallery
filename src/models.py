@@ -6,7 +6,7 @@ Importe novos modelos neste módulo para que o Alembic os detecte nas migrations
 import enum
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, String, Text, false, func, true
+from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, Integer, String, Text, false, func, true
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.db import Base
@@ -78,7 +78,34 @@ class Folder(Base):
     )
 
     owner: Mapped[User] = relationship(back_populates="folders")
+    photos: Mapped[list["Photo"]] = relationship(
+        back_populates="folder",
+        cascade="all, delete-orphan",
+        order_by="Photo.order",
+    )
 
 
-__all__ = ["Base", "Folder", "User", "UserRole"]
+class Photo(Base):
+    __tablename__ = "photos"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    folder_id: Mapped[int] = mapped_column(
+        ForeignKey("folders.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    filename: Mapped[str] = mapped_column(String(255), nullable=False)
+    original_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    order: Mapped[int] = mapped_column(Integer, default=0, server_default="0", nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+
+    folder: Mapped[Folder] = relationship(back_populates="photos")
+
+
+__all__ = ["Base", "Folder", "Photo", "User", "UserRole"]
+
 
