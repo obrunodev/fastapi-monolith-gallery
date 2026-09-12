@@ -1,4 +1,4 @@
-.PHONY: install run test db-migrate db-upgrade
+.PHONY: install run test db-migrate db-upgrade db-seed
 
 install:
 	uv sync --group dev
@@ -14,3 +14,6 @@ db-migrate:
 
 db-upgrade:
 	uv run alembic upgrade head
+
+db-seed:
+	uv run python -m src.services.seed

@@ -17,8 +17,9 @@ Monolito **FastAPI + Jinja2** (SSR, sem SPA). Repositório: galeria pública/pri
 - `GET /health` — health check JSON
 - `GET /` — dashboard HTML (placeholder)
 - Persistência SQLite: `src/config.py`, `src/db.py`, `src/models.py`, Alembic em `alembic/`
+- Modelo `User` (username/email únicos, role `user`/`moderator`/`admin`) + seed de admin (`make db-seed`)
 - Templates: `src/templates/base.html` + `dashboard.html`
-- Testes: `tests/test_health.py`, `tests/test_db.py`
+- Testes: `tests/test_health.py`, `tests/test_db.py`, `tests/test_users.py`
 
 ## Próxima tarefa
 
@@ -38,6 +39,7 @@ Pré-requisitos: **Python 3.12+** e **uv** instalado.
 ```bash
 make install      # uv sync --group dev
 make db-upgrade   # aplica migrations (cria data/app.db)
+make db-seed      # cria o admin inicial (idempotente)
 make run          # http://127.0.0.1:8000
 make test         # pytest
 ```
@@ -47,6 +49,9 @@ Variáveis opcionais:
 | Variável | Default | Uso |
 |----------|---------|-----|
 | `DATABASE_URL` | `sqlite:///./data/app.db` | Banco de dados |
+| `ADMIN_USERNAME` | `admin` | Username do seed de admin |
+| `ADMIN_EMAIL` | `admin@localhost` | E-mail do seed de admin |
+| `ADMIN_PASSWORD` | `admin` | Senha do seed de admin |
 
 Comandos extras:
 
