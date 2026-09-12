@@ -1,14 +1,10 @@
-import bcrypt
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from src.config import get_admin_email, get_admin_password, get_admin_username
 from src.db import SessionLocal
 from src.models import User, UserRole
-
-
-def hash_password(plain_password: str) -> str:
-    return bcrypt.hashpw(plain_password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+from src.services.passwords import hash_password
 
 
 def seed_admin(

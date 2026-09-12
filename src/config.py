@@ -21,3 +21,7 @@ def get_admin_email() -> str:
 def get_admin_password() -> str:
     return os.getenv("ADMIN_PASSWORD", "admin")
 
+
+def get_session_secret() -> str:
+    return os.getenv("SESSION_SECRET", "dev-insecure-change-me")
+

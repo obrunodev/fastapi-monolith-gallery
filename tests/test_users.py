@@ -4,7 +4,8 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from src.models import User, UserRole
-from src.services.seed import hash_password, seed_admin
+from src.services.passwords import hash_password
+from src.services.seed import seed_admin
 
 
 def test_user_persists_with_default_role(db_session: Session) -> None:

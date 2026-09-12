@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Criar conta{% endblock %}
+{% block heading %}Criar conta{% endblock %}
+
+{% block content %}
+{% if logged_in %}
+  <p>Você já está autenticado.</p>
+{% else %}
+  {% if error %}
+  <p class="form-error" role="alert">{{ error }}</p>
+  {% endif %}
+  <form class="auth-form" method="post" action="/register">
+    <label>
+      Username
+      <input type="text" name="username" value="{{ username }}" autocomplete="username" required minlength="3" maxlength="50" />
+    </label>
+    <label>
+      E-mail
+      <input type="email" name="email" value="{{ email }}" autocomplete="email" required />
+    </label>
+    <label>
+      Senha
+      <input type="password" name="password" autocomplete="new-password" required minlength="8" />
+    </label>
+    <button type="submit">Criar conta</button>
+  </form>
+  <p class="auth-alt"><a href="/login">Já tenho conta</a></p>
+{% endif %}
+{% endblock %}

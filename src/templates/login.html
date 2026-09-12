@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}Entrar{% endblock %}
+{% block heading %}Entrar{% endblock %}
+
+{% block content %}
+{% if logged_in %}
+  <p>Você já está autenticado.</p>
+{% else %}
+  {% if error %}
+  <p class="form-error" role="alert">{{ error }}</p>
+  {% endif %}
+  <form class="auth-form" method="post" action="/login">
+    <label>
+      Username ou e-mail
+      <input type="text" name="identifier" value="{{ identifier }}" autocomplete="username" required />
+    </label>
+    <label>
+      Senha
+      <input type="password" name="password" autocomplete="current-password" required />
+    </label>
+    <button type="submit">Entrar</button>
+  </form>
+  <p class="auth-alt"><a href="/register">Criar conta</a></p>
+{% endif %}
+{% endblock %}

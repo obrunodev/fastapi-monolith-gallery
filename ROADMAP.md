@@ -9,8 +9,8 @@ Monolito FastAPI + Jinja2, alinhado à estrutura atual (`routes` → `schemas` �
 | Campo | Valor |
 |-------|-------|
 | **Fase atual** | F0 — Fundação |
-| **Última tarefa concluída** | 0.2 |
-| **Próxima tarefa** | **0.3** — Auth com sessão (cookie): registro, login, logout |
+| **Última tarefa concluída** | 0.3 |
+| **Próxima tarefa** | **0.4** — Middleware/dependency `get_current_user` (opcional/anônimo) |
 | **MVP completo?** | Não |
 
 > Ao concluir uma tarefa: marque `[x]` na tabela da fase e atualize esta seção.
@@ -58,7 +58,7 @@ F8  Gamificação       → níveis, pontos, perfil com level (pós-MVP)
 |---|--------|--------|------------|
 | 0.1 | [x] | Adicionar SQLAlchemy + Alembic + SQLite (dev) | `src/db.py`, `src/models.py`, migrations |
 | 0.2 | [x] | Modelo `User`: id, username (único), email, password_hash, role (`user`/`moderator`/`admin`), created_at | Migration + seed de admin |
-| 0.3 | [ ] | Auth com sessão (cookie): registro, login, logout | `routes/auth.py`, `services/auth.py`, templates |
+| 0.3 | [x] | Auth com sessão (cookie): registro, login, logout | `routes/auth.py`, `services/auth.py`, templates |
 | 0.4 | [ ] | Middleware/dependency `get_current_user` (opcional/anônimo) | Reutilizável em todas as rotas |
 | 0.5 | [ ] | Atualizar `base.html`: nav (login/logout), flash messages | Layout mínimo da galeria |
 | 0.6 | [ ] | Substituir dashboard por feed vazio "Suas pastas" | `/` autenticado vs visitante |
