@@ -14,6 +14,7 @@
         <h1>{% block heading %}{{ title | default("Projeto TLC") }}{% endblock %}</h1>
         <nav class="site-nav" aria-label="Conta">
           {% if logged_in %}
+          <span class="site-nav-user">{{ current_user.username }}</span>
           <form method="post" action="/logout">
             <button type="submit">Sair</button>
           </form>

@@ -43,6 +43,10 @@ body {
   margin: 0;
 }
 
+.site-nav-user {
+  font-weight: 600;
+}
+
 .auth-form {
   display: grid;
   gap: 0.75rem;

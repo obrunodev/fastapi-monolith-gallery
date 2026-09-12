@@ -4,6 +4,8 @@ from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
 from src.db import get_db
+from src.deps import get_current_user
+from src.models import User
 from src.schemas.auth import UserLogin, UserRegister
 from src.services.auth import (
     SESSION_USER_ID,
@@ -14,10 +16,6 @@ from src.services.auth import (
 from src.templating import templates
 
 router = APIRouter(tags=["auth"])
-
-
-def _is_logged_in(request: Request) -> bool:
-    return request.session.get(SESSION_USER_ID) is not None
 
 
 def _first_validation_error(exc: ValidationError) -> str:
@@ -51,8 +49,9 @@ def register(
     email: str = Form(),
     password: str = Form(),
     db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_current_user),
 ) -> HTMLResponse:
-    if _is_logged_in(request):
+    if current_user is not None:
         return RedirectResponse("/", status_code=303)
     context = {
         "title": "Criar conta",
@@ -111,8 +110,9 @@ def login(
     identifier: str = Form(),
     password: str = Form(),
     db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_current_user),
 ) -> HTMLResponse:
-    if _is_logged_in(request):
+    if current_user is not None:
         return RedirectResponse("/", status_code=303)
     context = {
         "title": "Entrar",

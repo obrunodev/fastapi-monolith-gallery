@@ -1,15 +1,17 @@
 from pathlib import Path
 
-from starlette.requests import Request
 from fastapi.templating import Jinja2Templates
-
-from src.services.auth import SESSION_USER_ID
+from starlette.requests import Request
 
 TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
 
 
-def _session_context(request: Request) -> dict[str, bool]:
-    return {"logged_in": request.session.get(SESSION_USER_ID) is not None}
+def _session_context(request: Request) -> dict[str, object]:
+    current_user = getattr(request.state, "current_user", None)
+    return {
+        "current_user": current_user,
+        "logged_in": current_user is not None,
+    }
 
 
 templates = Jinja2Templates(

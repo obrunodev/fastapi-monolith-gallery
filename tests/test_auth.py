@@ -1,4 +1,8 @@
 from fastapi.testclient import TestClient
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from src.models import User
 
 REGISTER_DATA = {
     "username": "alice",
@@ -104,4 +108,21 @@ def test_home_shows_logout_after_login(client: TestClient) -> None:
     assert response.status_code == 200
     assert ">Sair<" in response.text
     assert 'action="/logout"' in response.text
-    assert "href=\"/login\"" not in response.text
+    assert 'class="site-nav-user">alice' in response.text
+    assert 'href="/login"' not in response.text
+
+
+def test_missing_user_is_treated_as_anonymous(
+    client: TestClient,
+    db_session: Session,
+) -> None:
+    client.post("/register", data=REGISTER_DATA)
+    user = db_session.scalar(select(User).where(User.username == "alice"))
+    assert user is not None
+    db_session.delete(user)
+    db_session.commit()
+
+    response = client.get("/")
+    assert response.status_code == 200
+    assert "Entrar" in response.text
+    assert ">Sair<" not in response.text

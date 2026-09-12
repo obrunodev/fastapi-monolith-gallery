@@ -39,6 +39,10 @@ def register_user(
     return user
 
 
+def get_user_by_id(session: Session, user_id: int) -> User | None:
+    return session.get(User, user_id)
+
+
 def authenticate_user(session: Session, *, identifier: str, password: str) -> User:
     user = session.scalar(
         select(User).where(or_(User.username == identifier, User.email == identifier))

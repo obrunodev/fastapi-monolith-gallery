@@ -19,6 +19,7 @@ Monolito **FastAPI + Jinja2** (SSR, sem SPA). Repositório: galeria pública/pri
 - Persistência SQLite: `src/config.py`, `src/db.py`, `src/models.py`, Alembic em `alembic/`
 - Modelo `User` (username/email únicos, role `user`/`moderator`/`admin`) + seed de admin (`make db-seed`)
 - Auth com sessão (cookie): `/register`, `/login`, `POST /logout`
+- `get_current_user` em todas as rotas (anônimo se não houver sessão válida)
 - Templates: `src/templates/base.html` + `dashboard.html`
 - Testes: `tests/test_health.py`, `tests/test_db.py`, `tests/test_users.py`, `tests/test_auth.py`
 
